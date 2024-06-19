@@ -291,7 +291,7 @@
 /datum/supply_pack/security/armory/wt550
 	name = "WT-550 Semi-Auto Rifle Crate"
 	desc = "Содержит две мощные полуавтоматические винтовки с калибром 4,6x30 мм. Для открытия требуется доступ к оружейной."
-	cost = 2550
+	cost = 3000
 	contains = list(/obj/item/gun/ballistic/automatic/wt550,
 					/obj/item/gun/ballistic/automatic/wt550)
 	crate_name = "auto rifle crate"
