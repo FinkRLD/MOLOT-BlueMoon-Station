@@ -3,7 +3,7 @@
 		/obj/item/card/id/lust = 5,
 	)
 	var/list/extra_contraband = list(
-		/obj/item/reagent_containers/hypospray/medipen/lewdsleepy = 6,
+		/obj/item/reagent_containers/hypospray/medipen/lewdsleepy = 5,
 	)
 
 	var/list/extra_premium = list(
