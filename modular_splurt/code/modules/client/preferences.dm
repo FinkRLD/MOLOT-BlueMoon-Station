@@ -1023,8 +1023,8 @@
 					for(var/name in GLOB.loadout_items[gear_category][gear_subcategory])
 						var/datum/gear/gear = GLOB.loadout_items[gear_category][gear_subcategory][name]
 						var/donoritem = gear.donoritem
-						if(donoritem && !gear.donator_ckey_check(user.ckey))
-							continue
+						/*if(donoritem && !gear.donator_ckey_check(user.ckey))
+							continue*/
 						var/class_link = ""
 						var/list/loadout_item = has_loadout_gear(loadout_slot, "[gear.type]")
 						var/extra_loadout_data = ""
