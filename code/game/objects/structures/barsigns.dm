@@ -121,10 +121,25 @@
 
 
 /obj/structure/sign/barsign/proc/pick_sign(mob/user)
-	var/picked_name = input(user, "Available Signage", "Bar Sign", name) as null|anything in barsigns
+	var/picked_name = tgui_input_list(user, "Available Signage", "Bar Sign", barsigns, name)
 	if(!picked_name)
 		return
 	set_sign(picked_name)
+
+/obj/structure/sign/barsign/syndicate
+	desc = "A bar sign. Made in Syndicate."
+
+/obj/structure/sign/barsign/syndicate/Initialize(mapload)
+	. = ..()
+	var/datum/barsign/hiddensigns/syndibarsign/syndie_sign = locate() in barsigns
+	if(!syndie_sign)
+		syndie_sign = new
+		barsigns += syndie_sign
+	var/datum/barsign/cindikate/cindisign = locate() in barsigns
+	if(!cindisign)
+		cindisign = new
+		barsigns += cindisign
+	set_sign(pick(syndie_sign, cindisign))
 
 //Code below is to define useless variables for datums. It errors without these
 
@@ -133,7 +148,7 @@
 /datum/barsign
 	var/name = "Name"
 	var/icon = "Icon"
-	var/desc = "desc"
+	var/desc = ""
 	var/hidden = FALSE
 
 /* Переписано в modular_bluemoon\code\game\objects\structures\barsigns.dm

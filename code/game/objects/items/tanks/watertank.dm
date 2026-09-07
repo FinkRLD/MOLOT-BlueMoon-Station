@@ -15,6 +15,7 @@
 
 	var/obj/item/noz
 	var/volume = 500
+	var/in_modsuit = FALSE
 
 /obj/item/watertank/Initialize(mapload)
 	. = ..()
@@ -25,7 +26,7 @@
 	toggle_mister(user)
 
 /obj/item/watertank/item_action_slot_check(slot, mob/user, datum/action/A)
-	if(slot == user.getBackSlot())
+	if(slot == user.getBackSlot() || in_modsuit)
 		return TRUE
 
 /obj/item/watertank/proc/toggle_mister(mob/living/user)
@@ -58,7 +59,7 @@
 
 /obj/item/watertank/equipped(mob/user, slot)
 	..()
-	if(slot != ITEM_SLOT_BACK)
+	if(slot != ITEM_SLOT_BACK && !in_modsuit)
 		remove_noz()
 
 /obj/item/watertank/proc/remove_noz()
@@ -241,8 +242,10 @@
 
 
 /obj/item/extinguisher/mini/nozzle/doMove(atom/destination)
+	if(!tank || tank.in_modsuit)
+		return ..()
 	if(destination && (destination != tank.loc || !ismob(destination)))
-		if(loc != tank)
+		if(loc != tank && tank.loc)
 			to_chat(tank.loc, "<span class='notice'>The nozzle snaps back onto the tank!</span>")
 		destination = tank
 	..()

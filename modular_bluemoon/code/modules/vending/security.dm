@@ -19,7 +19,6 @@
 		/obj/item/restraints/legcuffs/bola/energy = 12,
 		/obj/item/evidencebag = 20,
 		/obj/item/secbat = 5,
-		/obj/item/fee_terminal = 10,
 		/obj/item/ammo_box/magazine/e45/taser = 10,
 		/obj/item/device/hailer = 10,
 		/obj/item/clothing/suit/armor/vest/peacekeeper = 5,
@@ -61,6 +60,7 @@
 		/obj/item/storage/backpack/hipbag/green = 1,
 		/obj/item/storage/bag/ammo = 3,
 		/obj/item/stamp/security = 3,
+		/obj/item/storage/belt/security/webbing/ds = 6,
 	)
 	refill_canister = /obj/item/vending_refill/security
 	default_price = PRICE_ALMOST_EXPENSIVE

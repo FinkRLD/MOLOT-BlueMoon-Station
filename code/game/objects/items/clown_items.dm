@@ -114,10 +114,12 @@
 		if(do_after(user, 4 SECONDS, target = H))
 			target.remove_atom_colour(WASHABLE_COLOUR_PRIORITY)
 			target.clean_blood()
+			target.clear_fingerprints()
 			SEND_SIGNAL(target, COMSIG_COMPONENT_CLEAN_ACT, CLEAN_MEDIUM)
 			target.wash_cream()
 			target.wash_cum()
-			affected.writtentext = ""
+			if(affected)
+				affected.writtentext = ""
 			if(try_to_clean_genitals)
 				for(var/obj/item/organ/genital/G in H.internal_organs)
 					if(G.writtentext && G.is_exposed() && G.zone == user.zone_selected)
@@ -154,6 +156,7 @@
 			to_chat(user, "<span class='notice'>You clean \the [target.name].</span>")
 			target.remove_atom_colour(WASHABLE_COLOUR_PRIORITY)
 			target.set_opacity(initial(target.opacity))
+			target.clear_fingerprints()
 	else
 		user.visible_message("[user] begins to clean \the [target.name] with [src]...", "<span class='notice'>You begin to clean \the [target.name] with [src]...</span>")
 		if(do_after(user, src.cleanspeed, target = target))
@@ -162,6 +165,7 @@
 			qdel(C)
 			target.remove_atom_colour(WASHABLE_COLOUR_PRIORITY)
 			target.clean_blood()
+			target.clear_fingerprints()
 			SEND_SIGNAL(target, COMSIG_COMPONENT_CLEAN_ACT, CLEAN_MEDIUM)
 			target.wash_cream()
 			target.wash_cum() //sandstorm edit

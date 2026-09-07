@@ -1,4 +1,18 @@
 GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех противометеоритных спутников
+/// Только для вызова get_coverage() в UI, когда цель станции не выбрана (не в station_goals).
+GLOBAL_DATUM_INIT(shield_goal_coverage_dummy, /datum/station_goal/station_shield, new)
+
+/// Последнее посчитанное покрытие щита (см. get_coverage).
+GLOBAL_VAR_INIT(shield_coverage_cache, 0)
+/// world.time, до которого кэш покрытия действителен; 0 = кэша нет.
+GLOBAL_VAR_INIT(shield_coverage_cache_expiry, 0)
+/// Сколько кэш покрытия живёт без явного сброса. Страховка от источников, которые
+/// меняют видимость мимо самих спутников: пробитая обшивка, новые стены.
+#define SHIELD_COVERAGE_CACHE_TTL (30 SECONDS)
+
+/// Покрытие изменилось: спутник включили, сдвинули, проапгрейдили или потеряли.
+/proc/invalidate_shield_coverage()
+	GLOB.shield_coverage_cache_expiry = 0
 
 //Station Shield
 // A chain of satellites encircles the station
@@ -31,19 +45,30 @@ GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех п�
 /datum/station_goal/station_shield/check_completion()
 	if(..())
 		return TRUE
+	// Итог раунда считается один раз - по живым турфам, а не по кэшу.
+	invalidate_shield_coverage()
 	if(get_coverage() >= coverage_goal)
 		return TRUE
 	return FALSE
 
 /datum/station_goal/proc/get_coverage()
-	var/list/coverage = list()
-	for(var/obj/machinery/satellite/meteor_shield/A in GLOB.machines)
-		if(!A.active || !is_station_level(A.z))
-			continue
-		coverage |= view(A.kill_range,A)
+	if(world.time < GLOB.shield_coverage_cache_expiry)
+		return GLOB.shield_coverage_cache
+
+	var/list/counted = list()
 	var/counter = 0
-	counter += count_by_type(coverage, /turf/open/space)
-	counter += count_by_type(coverage, /turf/open/openspace) // for multi-z stations
+	for(var/obj/machinery/satellite/meteor_shield/satellite in GLOB.meteor_satellites)
+		if(!satellite.active || !is_station_level(satellite.z))
+			continue
+		for(var/turf/covered in view(satellite.kill_range, satellite))
+			if(counted[covered])
+				continue
+			counted[covered] = TRUE
+			if(isspaceturf(covered) || istransparentturf(covered)) // openspace - for multi-z stations
+				counter++
+
+	GLOB.shield_coverage_cache = counter
+	GLOB.shield_coverage_cache_expiry = world.time + SHIELD_COVERAGE_CACHE_TTL
 	return counter
 
 /obj/machinery/computer/sat_control
@@ -67,28 +92,32 @@ GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех п�
 			. = TRUE
 
 /obj/machinery/computer/sat_control/proc/toggle(id)
-	for(var/obj/machinery/satellite/S in GLOB.machines)
-		if(S.id == id && S.z == z)
-			S.toggle()
+	for(var/obj/machinery/satellite/satellite as anything in GLOB.meteor_satellites)
+		if(satellite.id == id && satellite.z == z)
+			satellite.toggle()
 
 /obj/machinery/computer/sat_control/ui_data()
 	var/list/data = list()
 
-	data["satellites"] = list()
-	for(var/obj/machinery/satellite/S in GLOB.machines)
-		data["satellites"] += list(list(
-			"id" = S.id,
-			"active" = S.active,
-			"mode" = S.mode
+	var/list/satellites = list()
+	var/has_meteor_shield = FALSE
+	for(var/obj/machinery/satellite/satellite as anything in GLOB.meteor_satellites)
+		satellites += list(list(
+			"id" = satellite.id,
+			"active" = satellite.active,
+			"mode" = satellite.mode
 		))
+		if(!has_meteor_shield && istype(satellite, /obj/machinery/satellite/meteor_shield))
+			has_meteor_shield = TRUE
+	data["satellites"] = satellites
 	data["notice"] = notice
 
-
-	var/datum/station_goal/station_shield/G = locate() in SSticker.mode.station_goals
-	if(G)
+	if(has_meteor_shield)
 		data["meteor_shield"] = 1
-		data["meteor_shield_coverage"] = G.get_coverage()
-		data["meteor_shield_coverage_max"] = G.coverage_goal
+		var/datum/station_goal/station_shield/G = SSticker.mode && locate() in SSticker.mode.station_goals
+		var/datum/station_goal/station_shield/coverage_src = G || GLOB.shield_goal_coverage_dummy
+		data["meteor_shield_coverage"] = coverage_src.get_coverage()
+		data["meteor_shield_coverage_max"] = coverage_src.coverage_goal
 	return data
 
 
@@ -133,6 +162,7 @@ GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех п�
 /obj/machinery/satellite/Initialize(mapload)
 	. = ..()
 	GLOB.meteor_satellites += src
+	invalidate_shield_coverage()
 	id = gid++
 	// BLUEMOON ADD START
 	name = "[name] #[id]"
@@ -151,11 +181,12 @@ GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех п�
 
 // BLUEMOON ADD START
 /obj/machinery/satellite/Destroy() // сообщение в рацию о нарушении целостности, а также удаление камеры
-	if(active)
+	if(active && radio && !QDELETED(src))
 		radio.talk_into(src, scramble_message_replace_chars("[pick(destruction_quotes)] Координаты: [x], [y]", 5), engineering_channel)
 	QDEL_NULL(camera)
 	QDEL_NULL(radio)
 	GLOB.meteor_satellites -= src
+	invalidate_shield_coverage()
 	explosion(loc, 1, 2, 3, 3, TRUE, TRUE)
 	. = ..()
 
@@ -175,6 +206,9 @@ GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех п�
 /obj/machinery/satellite/Moved(oldLoc, dir)
 	. = ..()
 	update_camera_location(oldLoc)
+	// Выключенный спутник в покрытие не входит - его переезд кэш не трогает.
+	if(active)
+		invalidate_shield_coverage()
 
 /obj/machinery/satellite/forceMove(atom/destination)
 	. = ..()
@@ -206,6 +240,7 @@ GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех п�
 	if(user)
 		to_chat(user, "<span class='notice'>You [active ? "deactivate": "activate"] [src].</span>")
 	active = !active
+	invalidate_shield_coverage()
 	camera.toggle_cam(null, FALSE) // BLUEMOON ADD - включение или выключение камеры
 	if(active)
 		animate(src, pixel_y = 2, time = 10, loop = -1)
@@ -246,10 +281,12 @@ GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех п�
 	"Метеорит расколот", "Открываю огонь", "Открытие радиаторов", "Бомбадировка продолжается", "Сканирование сектора", "Цель уничтожена")
 	// BLUEMOON ADD END
 
-// BLUEMOON ADD START - добавление спутника в глобальный список спутников
 /obj/machinery/satellite/meteor_shield/Initialize(mapload)
 	. = ..()
-	GLOB.meteor_satellites += src
+	// В GLOB.meteor_satellites спутник кладёт родительский Initialize. Второе добавление
+	// здесь оставляло в списке дубль, который Destroy (одно `-=`) не снимал: каждый
+	// сбитый или разобранный спутник уходил в харддел с одной внешней ссылкой
+	// (раунд 10150 - шесть штук по ~375 мс), а meteor_wave обходил его дважды.
 	camera.view_range = kill_range
 
 /obj/machinery/satellite/meteor_shield/examine(mob/user)
@@ -271,6 +308,7 @@ GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех п�
 	if(istype(I, /obj/item/disk/meteor))
 		to_chat(user, "<span class='notice'>The disk uploads better tracking and rang modification software.</span>")
 		kill_range += 10 // BLUEMOON CHANGES (было = 17)
+		invalidate_shield_coverage()
 		camera.view_range = kill_range // BLUEMOON ADD - увеличение радиуса обзора камеры
 	else
 		return ..()
@@ -322,7 +360,7 @@ GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех п�
 			change_meteor_chance(0.5)
 
 /obj/machinery/satellite/meteor_shield/proc/change_meteor_chance(mod)
-	var/datum/round_event_control/E = locate(/datum/round_event_control/meteor_wave) in SSevents.control
+	var/datum/round_event_control/E = locate(/datum/round_event_control/meteor_wave) in SSdirector.event_controls()
 	if(E)
 		E.weight *= mod
 
@@ -341,3 +379,5 @@ GLOBAL_LIST_EMPTY(meteor_satellites) // BLUEMOON ADD - список всех п�
 	if(active)
 		change_meteor_chance(4)
 	return TRUE
+
+#undef SHIELD_COVERAGE_CACHE_TTL

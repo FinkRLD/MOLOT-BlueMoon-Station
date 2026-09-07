@@ -4,6 +4,12 @@
 /datum/sprite_accessory/hair
 	icon = 'icons/mob/hair.dmi'	  // default icon for all hairs
 	mutable_category = "HEAD"
+	/// Whether this hairstyle visually covers the LEFT eye. When true, the left eye glow (emissive)
+	/// is not drawn, so a covered eye doesn't glow through the hair.
+	var/hides_left_eye = FALSE
+	/// Whether this hairstyle visually covers the RIGHT eye. When true, the right eye glow (emissive)
+	/// is not drawn, so a covered eye doesn't glow through the hair.
+	var/hides_right_eye = FALSE
 
 	// please make sure they're sorted alphabetically and, where needed, categorized
 	// try to capitalize the names please~
@@ -85,6 +91,7 @@
 /datum/sprite_accessory/hair/bedhead_long
 	name = "Bedhead (Long)"
 	icon_state = "hair_long_bedhead"
+	hides_right_eye = TRUE
 
 /datum/sprite_accessory/hair/bedhead_longer
 	name = "Bedhead (Longer)"
@@ -675,6 +682,10 @@
 	name = "Pigtails 3"
 	icon_state = "hair_pigtails2"
 
+/datum/sprite_accessory/hair/pigtailss
+	name = "Pigtails 4"
+	icon_state = "hair_pigtailss"
+
 /datum/sprite_accessory/hair/pixie
 	name = "Pixie Cut"
 	icon_state = "hair_pixie"
@@ -722,6 +733,66 @@
 /datum/sprite_accessory/hair/ponytail4alt
 	name = "Ponytail 4 (Alt)"
 	icon_state = "hair_ponytail4alt"
+
+/datum/sprite_accessory/hair/judgement
+	name = "Judgement"
+	icon_state = "hair_judgement"
+
+/datum/sprite_accessory/hair/judgementaltcowlick
+	name = "Judgement (Cowlick)"
+	icon_state = "hair_judgement_alt_cowlick"
+
+/datum/sprite_accessory/hair/judgementalt
+	name = "Judgement (Alt)"
+	icon_state = "hair_judgement_alt"
+
+/datum/sprite_accessory/hair/uniquespiky
+	name = "Unique Spiky"
+	icon_state = "hair_unique_spiky"
+
+/datum/sprite_accessory/hair/uniquespikycowlick
+	name = "Unique Spiky (Cowlick)"
+	icon_state = "hair_unique_spiky_cowlick"
+
+/datum/sprite_accessory/hair/uniquespikycowlick
+	name = "Unique Spiky (Alt Cowlick)"
+	icon_state = "hair_unique_spiky_cowlick_alt"
+
+/datum/sprite_accessory/hair/uniquespikycowlick
+	name = "Unique Spiky (Alt 2 Cowlick)"
+	icon_state = "hair_unique_spiky_cowlick_alt"
+
+/datum/sprite_accessory/hair/hiddeneyes
+	name = "Hidden Eyes"
+	icon_state = "hair_hiddeneyes"
+
+/datum/sprite_accessory/hair/hiddeneyesalt
+	name = "Hidden Eyes (Alt)"
+	icon_state = "hair_hiddeneyes_alt"
+
+/datum/sprite_accessory/hair/hiddeneyesalt2
+	name = "Hidden Eyes (Alt 2)"
+	icon_state = "hair_hiddeneyes_alt2"
+
+/datum/sprite_accessory/hair/sleeper
+	name = "Sleeper"
+	icon_state = "hair_sleeper"
+
+/datum/sprite_accessory/hair/sleeperalt
+	name = "Sleeper (Alt)"
+	icon_state = "hair_sleeper_alt"
+
+/datum/sprite_accessory/hair/uniquefluffy
+	name = "Unique Fluffy"
+	icon_state = "hair_unique_fluffy"
+
+/datum/sprite_accessory/hair/uniquefluffyalt
+	name = "Unique Fluffy (Alt)"
+	icon_state = "hair_unique_fluffy_alt"
+
+/datum/sprite_accessory/hair/uniquefluffytail
+	name = "Unique Fluffy (Alt 2)"
+	icon_state = "hair_unique_fluffy_tail"
 
 /datum/sprite_accessory/hair/ponytail5
 	name = "Ponytail 5"
@@ -1081,6 +1152,10 @@
 /datum/sprite_accessory/hair_gradient/fadedown
 	name = "Fade Down"
 	icon_state = "fadedown"
+
+/datum/sprite_accessory/hair_gradient/full
+	name = "Full"
+	icon_state = "full"
 
 /datum/sprite_accessory/hair_gradient/vertical_split
 	name = "Vertical Split"

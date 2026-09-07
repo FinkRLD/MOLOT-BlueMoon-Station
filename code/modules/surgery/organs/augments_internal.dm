@@ -1,4 +1,4 @@
-#define STUN_SET_AMOUNT 40
+#define ANTI_STUN_SET_AMOUNT 40
 
 /obj/item/organ/cyberimp
 	name = "cybernetic implant"
@@ -7,9 +7,37 @@
 	organ_flags = ORGAN_SYNTHETIC
 	var/implant_color = "#FFFFFF"
 	var/implant_overlay
-	var/syndicate_implant = FALSE //Makes the implant invisible to health analyzers and medical HUDs.
+	///Makes the implant invisible to health analyzers and medical HUDs.
+	var/syndicate_implant = FALSE
+	/// Icon of the bodypart overlay we're going to be applying to our owner (on their body)
+	var/aug_icon = 'icons/mob/human/species/misc/bodypart_overlay_augmentations.dmi'
+	/// Icon state of the bodypart overlay we're going to be applying to our owner (on their body)
+	var/aug_overlay = null
+	/// Does the implant also have an emissive (glowing) overlay rendered on the body? Uses the "[aug_overlay]_e" icon state.
+	var/emissive_overlay = FALSE
+	/// Bodypart overlay datum we apply to the limb we're implanted into. Managed by on_bodypart_insert/remove.
+	var/datum/bodypart_overlay/augment/bodypart_aug = null
+
+/obj/item/organ/cyberimp/Initialize(mapload)
+	. = ..()
+	create_bodypart_aug()
+
+/// Lazily (re)creates the bodypart_overlay if the implant needs one. Safe to call multiple times.
+/obj/item/organ/cyberimp/proc/create_bodypart_aug()
+	if(!aug_overlay)
+		return
+	if(QDELETED(bodypart_aug))
+		if(!isnull(bodypart_aug))
+			QDEL_NULL(bodypart_aug)
+		bodypart_aug = new(src)
+
+/obj/item/organ/cyberimp/Destroy()
+	. = ..()
+	QDEL_NULL(bodypart_aug) // Do this after Remove() has done its thing, otherwise on_bodypart_remove() will not properly remove the overlay
 
 /obj/item/organ/cyberimp/New(var/mob/M = null)
+	// bodypart may need to exist before the New-based Insert() runs, so create it up-front
+	create_bodypart_aug()
 	if(iscarbon(M))
 		src.Insert(M)
 	if(implant_overlay)
@@ -18,7 +46,51 @@
 		add_overlay(overlay)
 	return ..()
 
+/// Returns the icon_state used for this implant's bodypart overlay (on the body).
+/obj/item/organ/cyberimp/proc/get_overlay_state()
+	return aug_overlay
 
+/// Builds the list of images to draw for this implant on the owner's body.
+/// Delegates to the bodypart_overlay/augment datum via get_overlay().
+/obj/item/organ/cyberimp/proc/get_overlay(image_layer, obj/item/bodypart/limb)
+	. = list()
+	. += image(icon = aug_icon, icon_state = get_overlay_state(), layer = image_layer)
+	if (emissive_overlay)
+		. += emissive_appearance(aug_icon, "[get_overlay_state()]_e", limb.owner || limb, image_layer)
+
+/// Called when this implant is inserted into a specific bodypart. Applies the augment overlay to the body.
+/obj/item/organ/cyberimp/proc/on_bodypart_insert(obj/item/bodypart/limb)
+	if (bodypart_aug)
+		limb.add_bodypart_overlay(bodypart_aug)
+
+/// Called when this implant is removed from a specific bodypart. Removes the augment overlay from the body.
+/obj/item/organ/cyberimp/proc/on_bodypart_remove(obj/item/bodypart/limb)
+	if (bodypart_aug)
+		limb.remove_bodypart_overlay(bodypart_aug)
+
+/// Forces the owner's body part overlays to rebuild (e.g. when a dynamic overlay state changes).
+/obj/item/organ/cyberimp/proc/refresh_bodypart_overlays(mob/living/carbon/target = owner)
+	if (target && ishuman(target))
+		var/mob/living/carbon/human/H = target
+		H.update_body_parts(TRUE, FALSE)
+
+/obj/item/organ/cyberimp/Insert(mob/living/carbon/M, special = 0, drop_if_replaced = TRUE)
+	. = ..()
+	if(. && owner)
+		var/obj/item/bodypart/limb = owner.get_bodypart(check_zone(zone))
+		on_bodypart_insert(limb)
+		refresh_bodypart_overlays()
+
+/obj/item/organ/cyberimp/Remove(special = FALSE)
+	var/mob/living/carbon/prev_owner = owner
+	var/obj/item/bodypart/limb = prev_owner ? prev_owner.get_bodypart(check_zone(zone)) : null
+	. = ..()
+	on_bodypart_remove(limb)
+	refresh_bodypart_overlays(prev_owner)
+
+// В отличие от органов, имланты будут работать, только пока их можно активировать
+/obj/item/organ/cyberimp/on_life(seconds, times_fired)
+	return activate_allowed(silent = TRUE) && ..()
 
 //[[[[BRAIN]]]]
 
@@ -39,7 +111,7 @@
 	to_chat(owner, "<span class='warning'>Your body seizes up!</span>")
 
 /obj/item/organ/cyberimp/brain/anti_drop
-	name = "anti-drop implant"
+	name = "Anti-Drop implant"
 	desc = "This cybernetic brain implant will allow you to force your hand muscles to contract, preventing item dropping. Twitch ear to toggle."
 	var/active = 0
 	var/list/stored_items = list()
@@ -86,12 +158,15 @@
 		REMOVE_TRAIT(I, TRAIT_NODROP, ANTI_DROP_IMPLANT_TRAIT)
 	stored_items = list()
 
-
-/obj/item/organ/cyberimp/brain/anti_drop/Remove(special = FALSE)
+/obj/item/organ/cyberimp/brain/anti_drop/deactivate(removing)
+	. = ..()
 	if(active)
 		ui_action_click()
-	return ..()
 
+/obj/item/organ/cyberimp/brain/anti_drop/sec_level
+	name = "Corporate Anti-Drop implant"
+	implant_color = "#ab6509"
+	active_security_level = ANTI_DROP_SEC_LEVEL
 
 /obj/item/organ/cyberimp/brain/anti_stun
 	name = "CNS Rebooter implant"
@@ -104,7 +179,7 @@
 	if(!. || crit_fail)
 		return
 	owner.adjustStaminaLoss(-3.5, FALSE) //Citadel edit, makes it more useful in Stamina based combat
-	owner.HealAllImmobilityUpTo(STUN_SET_AMOUNT)
+	owner.HealAllImmobilityUpTo(ANTI_STUN_SET_AMOUNT)
 
 /obj/item/organ/cyberimp/brain/anti_stun/emp_act(severity)
 	. = ..()
@@ -118,11 +193,17 @@
 	crit_fail = FALSE
 	organ_flags &= ~ORGAN_FAILING
 
+/obj/item/organ/cyberimp/brain/anti_stun/sec_level
+	name = "Corporate CNS Rebooter implant"
+	implant_color = "#c0c000"
+	active_security_level = CNS_REBOOTER_SEC_LEVEL
+
 /obj/item/organ/cyberimp/brain/robot_radshielding
 	name = "ECC System Guard implant"
 	desc = "This implant can counteract the effects of harmful radiation in robots, effectively increasing their radiation tolerance significantly."
 	implant_color = "#0066ff"
 	slot = ORGAN_SLOT_BRAIN_ROBOT_RADSHIELDING
+	var/active = FALSE
 
 /obj/item/organ/cyberimp/brain/robot_radshielding/emp_act(severity)
 	. = ..()
@@ -131,22 +212,30 @@
 	if(!HAS_TRAIT(owner, TRAIT_ROBOTIC_ORGANISM))
 		return //Why did you even get yourself implanted this if you aren't a robot?
 	owner.adjustToxLoss(severity / 10, toxins_type = TOX_SYSCORRUPT)
-	to_chat(owner, "<span class='warning'>Your ECC implant suddenly behaves very erratically, scrambling your system.</span>")
+	to_chat(owner, span_warning("<b>ECC-имплантат</b> внезапно начинает вести себя очень нестабильно, нарушая работу вашей системы."))
 
 /obj/item/organ/cyberimp/brain/robot_radshielding/Insert(mob/living/carbon/M, special = 0, drop_if_replaced = TRUE)
 	. = ..()
 	if(!.)
 		return
-	ADD_TRAIT(owner, TRAIT_ROBOT_RADSHIELDING, ROBOT_RADSHIELDING_IMPLANT_TRAIT) //Organics can get this, but it does literally nothing for them except cause more pain if EMPd, so uh, good on you?
+	code_activate()
 
-/obj/item/organ/cyberimp/brain/robot_radshielding/Remove(special = FALSE)
+/obj/item/organ/cyberimp/brain/robot_radshielding/code_activate()
 	. = ..()
-	if(!.)
+	if(active)
 		return
-	var/mob/living/carbon/C = .
-	REMOVE_TRAIT(C, TRAIT_ROBOT_RADSHIELDING, ROBOT_RADSHIELDING_IMPLANT_TRAIT)
+	ADD_TRAIT(owner, TRAIT_ROBOT_RADSHIELDING, ROBOT_RADSHIELDING_IMPLANT_TRAIT) //Organics can get this, but it does literally nothing for them except cause more pain if EMPd, so uh, good on you?
+	to_chat(owner, span_nicegreen("<b>ECC-имплантат</b> активируется, обеспечивая защиту от радиации."))
+	active = !active
 
-
+/obj/item/organ/cyberimp/brain/robot_radshielding/deactivate(removing)
+	. = ..()
+	if(!active)
+		return
+	REMOVE_TRAIT(owner, TRAIT_ROBOT_RADSHIELDING, ROBOT_RADSHIELDING_IMPLANT_TRAIT)
+	if(!removing)
+		to_chat(owner, span_warning("<b>ECC-имплантат</b> отключаяется, вы больше не защищены от радиации."))
+	active = !active
 
 //[[[[MOUTH]]]]
 /obj/item/organ/cyberimp/mouth
@@ -156,6 +245,7 @@
 	name = "breathing tube implant"
 	desc = "This simple implant adds an internals connector to your back, allowing you to use internals without a mask and protecting you from being choked."
 	icon_state = "implant_mask"
+	aug_overlay = "breathing_tube"
 	slot = ORGAN_SLOT_BREATHING_TUBE
 	w_class = WEIGHT_CLASS_TINY
 
@@ -166,3 +256,5 @@
 	if(prob(0.6*severity))
 		to_chat(owner, "<span class='warning'>Your breathing tube suddenly closes!</span>")
 		owner.losebreath += 8
+
+#undef ANTI_STUN_SET_AMOUNT

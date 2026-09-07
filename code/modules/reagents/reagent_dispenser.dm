@@ -4,11 +4,18 @@
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "water"
 	density = TRUE
+	shadow_weight = 0.35
 	anchored = FALSE
 	pressure_resistance = 2*ONE_ATMOSPHERE
 	max_integrity = 300
 	var/tank_volume = 1000 //In units, how much the dispenser can hold
 	var/reagent_id = /datum/reagent/water //The ID of the reagent that the dispenser uses
+	/// Can this dispenser be opened using a wrench?
+	var/openable = FALSE
+	/// Is this dispenser slowly leaking its reagent?
+	var/leaking = FALSE
+	/// How much reagent to leak
+	var/amount_to_leak = 10
 
 /obj/structure/reagent_dispensers/take_damage(damage_amount, damage_type = BRUTE, damage_flag = 0, sound_effect = 1, attack_dir)
 	. = ..()
@@ -33,13 +40,36 @@
 	. = ..()
 	if(anchored)
 		. += span_notice("It is <b>bolted</b> to the floor.")
+	if(openable)
+		if(!leaking)
+			. += span_notice("Its tap looks like it could be <b>wrenched</b> open.")
+		else
+			. += span_warning("Its tap is <b>wrenched</b> open!")
+
+/obj/structure/reagent_dispensers/proc/tank_leak()
+	if(!leaking || !reagents)
+		return FALSE
+	if(reagents.total_volume >= amount_to_leak)
+		reagents.reaction(get_turf(src), TOUCH, amount_to_leak / max(amount_to_leak, reagents.total_volume))
+		reagents.remove_reagent(reagent_id, amount_to_leak)
+		playsound(src, 'sound/effects/slosh.ogg', 33, TRUE, SILENCED_SOUND_EXTRARANGE)
+		return TRUE
+	return FALSE
+
+/obj/structure/reagent_dispensers/Moved(atom/old_loc, movement_dir, forced, list/old_locs, momentum_change = TRUE)
+	. = ..()
+	tank_leak()
 
 /obj/structure/reagent_dispensers/wrench_act(mob/living/user, obj/item/I)
 	. = ..()
-	to_chat(user, "<span class='notice'>You start [anchored ? "un" : ""]securing [src]...</span>")
-	if(I.use_tool(src, user, 40, volume=75))
-		to_chat(user, "<span class='notice'>You [anchored ? "un" : ""]secure [src].</span>")
-		set_anchored(!anchored)
+	if(openable)
+		leaking = !leaking
+		balloon_alert(user, "[leaking ? "opened" : "closed"] tap")
+		user.log_message("[leaking ? "opened" : "closed"] [src].", LOG_GAME)
+		tank_leak()
+		return TRUE
+	if(density)
+		default_unfasten_wrench(user, I)
 		return TRUE
 // BLUEMOON ADD END
 
@@ -92,12 +122,31 @@
 	name = "water tank"
 	desc = "A water tank."
 	icon_state = "water"
+	openable = TRUE
+	climbable = TRUE
 
 /obj/structure/reagent_dispensers/watertank/high
 	name = "high-capacity water tank"
 	desc = "A highly pressurized water tank made to hold gargantuan amounts of water."
 	icon_state = "water_high" //I was gonna clean my room...
-	tank_volume = 100000
+	tank_volume = 3000
+
+/obj/structure/reagent_dispensers/watertank/holy
+	name = "BIG HOLY FLASK"
+	desc = "A VERY large and VERY holy flask, pure holy waterness!"
+	icon_state = "holyflask"
+	reagent_id = /datum/reagent/water/holywater
+	layer = ABOVE_ALL_MOB_LAYER // Big sprite
+
+/obj/structure/reagent_dispensers/watertank/holy/Initialize(mapload)
+	. = ..()
+	var/const/scale = 2
+	var/matrix/m = matrix()
+	m.Scale(scale)
+	// смещаем спрайт вверх
+	var/shift = (scale - 1) * 16
+	m.Translate(0, shift)
+	transform = m
 
 /obj/structure/reagent_dispensers/foamtank
 	name = "firefighting foam tank"
@@ -105,6 +154,8 @@
 	icon_state = "foam"
 	reagent_id = /datum/reagent/firefighting_foam
 	tank_volume = 500
+	openable = TRUE
+	climbable = TRUE
 
 /obj/structure/reagent_dispensers/water_cooler
 	name = "liquid cooler"
@@ -177,6 +228,9 @@
 	desc = "A tank full of industrial welding fuel. Do not consume."
 	icon_state = "fuel"
 	reagent_id = /datum/reagent/fuel
+	openable = TRUE
+	climbable = TRUE
+	var/mob/living/last_attacker
 
 /obj/structure/reagent_dispensers/fueltank/high
 	name = "high-capacity fuel tank"
@@ -191,15 +245,15 @@
 	tank_volume = 100000
 
 /obj/structure/reagent_dispensers/fueltank/limitka/explode()
-	explosion(src, heavy_impact_range = 7, light_impact_range = 14, flame_range = 21, flash_range = 34)
+	explosion(src, heavy_impact_range = 7, light_impact_range = 14, flame_range = 21, flash_range = 34, attacker = last_attacker)
 	qdel(src)
 
 /obj/structure/reagent_dispensers/fueltank/proc/explode()
-	explosion(get_turf(src), 0, 1, 5, flame_range = 5)
+	explosion(get_turf(src), 0, 1, 5, flame_range = 5, attacker = last_attacker)
 	qdel(src)
 
 /obj/structure/reagent_dispensers/fueltank/high/explode()
-	explosion(get_turf(src), 0, 2, 5, flame_range = 12)
+	explosion(get_turf(src), 0, 2, 5, flame_range = 12, attacker = last_attacker)
 	qdel(src)
 
 
@@ -220,9 +274,11 @@
 /obj/structure/reagent_dispensers/fueltank/bullet_act(obj/item/projectile/hitting_projectile)
 	if(hitting_projectile.damage > 0 && ((hitting_projectile.damage_type == BURN) || (hitting_projectile.damage_type == BRUTE)))
 		var/boom_message = "[ADMIN_LOOKUPFLW(hitting_projectile.firer)] triggered a fueltank explosion via projectile."
-		GLOB.bombers += boom_message
+		add_bomber_message(boom_message)
 		message_admins(boom_message)
 		hitting_projectile.firer.log_message("triggered a fueltank explosion via projectile.", LOG_ATTACK)
+		if(isliving(hitting_projectile.firer))
+			last_attacker = hitting_projectile.firer
 		explode() //Bluemoon change
 
 /obj/structure/reagent_dispensers/fueltank/attackby(obj/item/I, mob/living/user, params)
@@ -247,10 +303,11 @@
 			user.visible_message("<span class='warning'>[user] catastrophically fails at refilling [user.ru_ego()] [W.name]!</span>", "<span class='userdanger'>That was stupid of you.</span>")
 
 			var/message_admins = "[ADMIN_LOOKUPFLW(user)] triggered a fueltank explosion via welding tool at [ADMIN_VERBOSEJMP(T)]."
-			GLOB.bombers += message_admins
+			add_bomber_message(message_admins)
 			message_admins(message_admins)
 
 			user.log_message("triggered a fueltank explosion via welding tool.", LOG_ATTACK)
+			last_attacker = user
 			explode() //Bluemoon change
 		return
 	return ..()
@@ -304,6 +361,7 @@
 	icon_state = "vat"
 	anchored = TRUE
 	reagent_id = /datum/reagent/consumable/cooking_oil
+	openable = TRUE
 
 /obj/structure/reagent_dispensers/servingdish
 	name = "serving dish"
@@ -396,6 +454,7 @@
 	name = "keg"
 	desc = "A keg."
 	icon_state = "keg"
+	openable = TRUE
 
 /obj/structure/reagent_dispensers/keg/mead
 	name = "keg of mead"
@@ -464,7 +523,8 @@
 	name = "Space Cleaner Refiller"
 	desc = "Refills space cleaner bottles."
 	icon_state = "cleaner"
-	anchored = 1
-	density = 0
+	anchored = TRUE
+	density = FALSE
+	plane = ABOVE_WALL_PLANE
 	tank_volume = 5000
 	reagent_id = /datum/reagent/space_cleaner

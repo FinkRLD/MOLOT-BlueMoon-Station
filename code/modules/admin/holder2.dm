@@ -33,6 +33,11 @@ GLOBAL_PROTECT(href_token)
 	/// A lazylist of tagged datums, for quick reference with the View Tags verb
 	var/list/tagged_datums
 
+	/// Cached spawn panel datum; created on first use
+	var/datum/spawnpanel/spawn_panel_instance
+
+	var/following = null
+
 /datum/admins/CanProcCall(procname)
 	. = ..()
 	if(!check_rights(R_SENSITIVE))
@@ -72,6 +77,8 @@ GLOBAL_PROTECT(href_token)
 	if(IsAdminAdvancedProcCall())
 		alert_to_permissions_elevation_attempt(usr)
 		return QDEL_HINT_LETMELIVE
+	QDEL_NULL(spawn_panel_instance)
+	QDEL_NULL(log_viewer)
 	. = ..()
 
 /datum/admins/proc/activate()
@@ -117,11 +124,21 @@ GLOBAL_PROTECT(href_token)
 		owner.init_verbs() //re-initialize the verb list
 		GLOB.admins |= C
 
+		// mentor stuff
+		if(!C.mentor_datum)
+			C.mentor_datum_set(TRUE)
+		else if(C.dementored && CHECK_BITFIELD(owner.prefs.deadmin, DEADMIN_AUTODMENTOR))
+			C.cmd_mentor_rementor()
+
 /datum/admins/proc/disassociate()
 	if(IsAdminAdvancedProcCall())
 		alert_to_permissions_elevation_attempt(usr)
 		return
 	if(owner)
+		// mentor stuff
+		if(owner.mentor_datum && !owner.dementored && CHECK_BITFIELD(owner.prefs.deadmin, DEADMIN_AUTODMENTOR))
+			owner.cmd_mentor_dementor()
+
 		GLOB.admins -= owner
 		owner.remove_admin_verbs()
 		owner.init_verbs()

@@ -333,6 +333,8 @@
 	addtimer(CALLBACK(src, PROC_REF(preReturn), holder), delays[POD_LEAVING] * 0.2) //Start to leave a bit after closing for cinematic effect
 
 /obj/structure/closet/supplypod/take_contents(atom/movable/holder)
+	if(!holder)
+		return
 	var/turf/turf_underneath = holder.drop_location()
 	for(var/atom_to_check in turf_underneath)
 		if(atom_to_check != src && !insert(atom_to_check, holder)) // Can't insert that
@@ -434,6 +436,7 @@
 	if (isspaceturf(T) || isclosedturf(T))
 		return
 	rubble = new /obj/effect/decal/cleanable/supplypod_rubble(T)
+	rubble.pod = src
 	rubble.setStyle(rubble_type, src)
 	update_icon()
 
@@ -442,8 +445,10 @@
 	return ..()
 
 /obj/structure/closet/supplypod/proc/deleteRubble()
-	rubble?.fadeAway()
-	rubble = null
+	if(rubble)
+		rubble.pod = null
+		rubble.fadeAway()
+		rubble = null
 	update_icon()
 
 /obj/structure/closet/supplypod/proc/addGlow()
@@ -476,6 +481,13 @@
 	layer = PROJECTILE_HIT_THRESHHOLD_LAYER
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 	alpha = 0
+	var/obj/effect/pod_landingzone/zone
+
+/obj/effect/supplypod_smoke/Destroy()
+	if(zone)
+		zone.smoke_effects -= src
+		zone = null
+	return ..()
 
 /obj/effect/engineglow //Falling pod smoke
 	name = ""
@@ -502,8 +514,17 @@
 	icon_state = "rubble_bg"
 	anchored = TRUE
 	pixel_x = SUPPLYPOD_X_OFFSET
+	// Под держит ссылку и рисует по нему передний план - кап декалей его не вытесняет.
+	cap_exempt = TRUE
 	var/foreground = "rubble_fg"
 	var/verticle_offset = 0
+	var/obj/structure/closet/supplypod/pod
+
+/obj/effect/decal/cleanable/supplypod_rubble/Destroy()
+	if(pod)
+		pod.rubble = null
+		pod = null
+	return ..()
 
 /obj/effect/decal/cleanable/supplypod_rubble/proc/getForeground(obj/structure/closet/supplypod/pod)
 	var/mutable_appearance/rubble_overlay = mutable_appearance('icons/obj/supplypods.dmi', foreground)
@@ -592,6 +613,12 @@
 		addtimer(CALLBACK(src, PROC_REF(playFallingSound)), soundStartTime)
 	addtimer(CALLBACK(src, PROC_REF(beginLaunch), pod.effectCircle), pod.delays[POD_TRANSIT])
 
+/obj/effect/pod_landingzone/Destroy()
+	for(var/obj/effect/supplypod_smoke/smoke_part in smoke_effects)
+		smoke_part.zone = null
+	smoke_effects = null
+	return ..()
+
 /obj/effect/pod_landingzone/proc/playFallingSound()
 	playsound(src, pod.fallingSound, pod.soundVolume, TRUE, 6)
 
@@ -624,6 +651,7 @@
 			smoke_part.layer = FLY_LAYER
 			smoke_part.icon_state = "smoke_start"
 		smoke_part.transform = matrix().Turn(rotation)
+		smoke_part.zone = src
 		smoke_effects[i] = smoke_part
 		smoke_part.pixel_x = sin(rotation)*32 * i
 		smoke_part.pixel_y = abs(cos(rotation))*32 * i

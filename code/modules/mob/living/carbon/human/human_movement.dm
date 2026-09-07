@@ -12,6 +12,10 @@
 /mob/living/carbon/human/slip(knockdown_amount, obj/O, lube)
 	if(HAS_TRAIT(src, TRAIT_NOSLIPALL))
 		return FALSE
+	if(shoes && istype(shoes, /obj/item/clothing))
+		var/obj/item/clothing/CS = shoes
+		if (CS.clothing_flags & NOSLIP_ALL)
+			return FALSE
 	if (!(lube & GALOSHES_DONT_HELP))
 		if(HAS_TRAIT(src, TRAIT_NOSLIPWATER))
 			return FALSE
@@ -42,12 +46,12 @@
 			. = 1
 
 /mob/living/carbon/human/mob_negates_gravity()
-	return ((shoes && shoes.negates_gravity()) || (dna.species.negates_gravity(src)))
+	return ((shoes && shoes.negates_gravity()) || (dna?.species?.negates_gravity(src)))
 
 /mob/living/carbon/human/Move(NewLoc, direct)
 	var/oldpseudoheight = pseudo_z_axis
 	. = ..()
-	for(var/datum/mutation/human/HM in dna.mutations)
+	for(var/datum/mutation/human/HM in dna?.mutations)
 		HM.on_move(NewLoc)
 	if(. && (combat_flags & COMBAT_FLAG_SPRINT_ACTIVE) && !(movement_type & FLYING) && CHECK_ALL_MOBILITY(src, MOBILITY_MOVE|MOBILITY_STAND) && m_intent == MOVE_INTENT_RUN && has_gravity(loc) && (!pulledby || (pulledby.pulledby == src)))
 		if(!HAS_TRAIT(src, TRAIT_FREESPRINT))
@@ -72,8 +76,17 @@
 				var/turf/T = get_turf(src)
 				if(istype(S))
 					if(S.bloody_shoes && S.bloody_shoes[S.blood_state])
-						var/obj/effect/decal/cleanable/blood/footprints/oldFP = locate(/obj/effect/decal/cleanable/blood/footprints) in T
-						if(oldFP && (oldFP.blood_state == S.blood_state && oldFP.color == S.last_blood_color))
+						// След нужен со своим состоянием и цветом: чужой не дополняется, а копится сверху.
+						var/obj/effect/decal/cleanable/blood/footprints/old_footprints
+						for(var/obj/effect/decal/cleanable/blood/footprints/existing in T)
+							if(existing.blood_state != S.blood_state || existing.color != S.last_blood_color)
+								continue
+							old_footprints = existing
+							break
+						if(old_footprints)
+							if(!(old_footprints.entered_dirs & dir))
+								old_footprints.entered_dirs |= dir
+								old_footprints.update_icon()
 							return
 						S.bloody_shoes[S.blood_state] = max(0, S.bloody_shoes[S.blood_state] - BLOOD_LOSS_PER_STEP)
 						var/obj/effect/decal/cleanable/blood/footprints/FP = new /obj/effect/decal/cleanable/blood/footprints(T)
@@ -81,6 +94,7 @@
 						FP.entered_dirs |= dir
 						FP.bloodiness = S.bloody_shoes[S.blood_state]
 						if(S.last_bloodtype)
+							LAZYINITLIST(FP.blood_DNA)
 							FP.blood_DNA[S.last_blood_DNA] = S.last_bloodtype
 							if(!FP.blood_DNA["color"])
 								FP.blood_DNA["color"] = S.last_blood_color
@@ -97,7 +111,7 @@
 		dirt_buildup()
 
 /mob/living/carbon/human/Process_Spacemove(movement_dir = 0) //Temporary laziness thing. Will change to handles by species reee.
-	if(dna.species.space_move(src))
+	if(dna?.species?.space_move(src))
 		return TRUE
 	return ..()
 
@@ -105,7 +119,7 @@
 	if(!shoes || !(shoes.body_parts_covered & FEET))
 		return	// barefoot advantage
 	var/turf/open/T = loc
-	if(!istype(T) || !T.dirt_buildup_allowed)
+	if(!istype(T) || !(T.turf_flags & TURF_DIRT_BUILDUP_ALLOWED))
 		return
 	var/area/A = T.loc
 	if(!A.dirt_buildup_allowed)
@@ -117,7 +131,11 @@
 		D.dirty(strength)
 	else
 		T.dirtyness += strength
-		if(T.dirtyness >= (isnull(T.dirt_spawn_threshold)? CONFIG_GET(number/turf_dirt_threshold) : T.dirt_spawn_threshold))
+		if(T.dirtyness >= CONFIG_GET(number/turf_dirt_threshold))
 			D = new /obj/effect/decal/cleanable/dirt(T)
-			D.dirty(T.dirt_spawn_threshold - T.dirtyness)
+			// dirt_spawn_threshold была объявлена на /turf/open, но её никто никогда не выставлял,
+			// поэтому здесь всегда считалось null - dirtyness, то есть отрицательная величина.
+			// Поведение сохранено как было; по смыслу свежий декаль должен получать накопленную
+			// грязь, а не терять альфу - это отдельный баг, чинить его надо отдельным коммитом.
+			D.dirty(-T.dirtyness)
 			T.dirtyness = 0		// reset.
