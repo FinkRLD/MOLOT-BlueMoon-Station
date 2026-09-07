@@ -2462,8 +2462,8 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 										continue
 									var/display_name = html_encode(name)
 									var/donoritem = gear.donoritem
-									/*if(donoritem && !gear.donator_ckey_check(user.ckey))
-										continue*/
+									if(donoritem && !gear.donator_ckey_check(user.ckey))
+										continue
 									var/background_cl = "#23273C"
 									if(even)
 										background_cl = "#17191C"
