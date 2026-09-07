@@ -2462,8 +2462,8 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 										continue
 									var/display_name = html_encode(name)
 									var/donoritem = gear.donoritem
-									/*if(donoritem && !gear.donator_ckey_check(user.ckey))
-										continue*/
+									if(donoritem && !gear.donator_ckey_check(user.ckey))
+										continue
 									var/background_cl = "#23273C"
 									if(even)
 										background_cl = "#17191C"
@@ -6079,9 +6079,9 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 				if(!is_loadout_slot_available(G.category))
 					to_chat(user, "<span class='danger'>You cannot take this loadout, as you've already chosen too many of the same category!</span>")
 					return
-				/*if(G.donoritem && !G.donator_ckey_check(user.ckey))
+				if(G.donoritem && !G.donator_ckey_check(user.ckey))
 					to_chat(user, "<span class='danger'>This is an item intended for donator use only. You are not authorized to use this item.</span>")
-					return*/
+					return
 				if(istype(G, /datum/gear/unlockable) && !can_use_unlockable(G))
 					to_chat(user, "<span class='danger'>To use this item, you need to meet the defined requirements!</span>")
 					return
