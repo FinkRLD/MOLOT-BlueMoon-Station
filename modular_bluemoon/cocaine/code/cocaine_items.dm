@@ -96,7 +96,7 @@
 	include_subtypes = FALSE
 
 /datum/export/crack/crackbrick
-	cost = CARGO_CRATE_VALUE * 1.25
+	cost = CARGO_CRATE_VALUE * 1.5
 	unit_name = "crack brick"
 	export_types = list(/obj/item/reagent_containers/crackbrick)
 	include_subtypes = FALSE
@@ -108,7 +108,7 @@
 	include_subtypes = FALSE
 
 /datum/export/cocainebrick
-	cost = CARGO_CRATE_VALUE * 1
+	cost = CARGO_CRATE_VALUE * 1.25
 	unit_name = "cocaine brick"
 	export_types = list(/obj/item/reagent_containers/cocainebrick)
 	include_subtypes = FALSE
