@@ -4628,6 +4628,7 @@
 #include "modular_bluemoon\code\game\machinery\cloth_drive.dm"
 #include "modular_bluemoon\code\game\machinery\coffeemaker.dm"
 #include "modular_bluemoon\code\game\machinery\contraband_points.dm"
+#include "modular_bluemoon\code\game\machinery\crafter.dm"
 #include "modular_bluemoon\code\game\machinery\makeshift_autolathe.dm"
 #include "modular_bluemoon\code\game\machinery\PDApainter.dm"
 #include "modular_bluemoon\code\game\machinery\robo_liquid_generator.dm"
