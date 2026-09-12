@@ -545,6 +545,29 @@
 		.["arousal_multiplier"] =		prefs.arousal_multiplier
 		.["use_moaning_multiplier"] = 	prefs.use_moaning_multiplier
 		.["moaning_multiplier"] = 		prefs.moaning_multiplier
+		.["use_custom_moan_sounds"] = 	prefs.use_custom_moan_sounds
+
+		var/list/regular_moans
+		var/list/soft_moans = list()
+		if(self.gender == FEMALE || (self.gender == PLURAL && isfeminine(self)))
+			regular_moans = GLOB.lewd_moans_female
+			soft_moans = GLOB.lewd_softmoans_female
+		else
+			regular_moans = GLOB.lewd_moans_male
+		var/list/moan_options = list()
+		var/moan_index = 0
+		for(var/moan_file in regular_moans)
+			moan_index++
+			moan_options += list(list("key" = "[moan_file]", "label" = "Стон [moan_index]", "group" = "Обычные"))
+		moan_index = 0
+		for(var/moan_file in soft_moans)
+			moan_index++
+			moan_options += list(list("key" = "[moan_file]", "label" = "Стон [moan_index]", "group" = "Тихие"))
+		.["available_moan_sounds"] = moan_options
+		var/list/custom_moan_keys = list()
+		for(var/saved_moan in SANITIZE_LIST(prefs.custom_moan_sounds))
+			custom_moan_keys += "[saved_moan]"
+		.["custom_moan_sounds"] = custom_moan_keys
 
 	//Let's get their favorites!
 		.["favorite_interactions"] = 	SANITIZE_LIST(prefs.favorite_interactions)
@@ -924,6 +947,9 @@
 				if("moaning_multiplier")
 					prefs.moaning_multiplier = params["amount"]
 					dirty_var = "moaning_multiplier"
+				if("use_custom_moan_sounds")
+					prefs.use_custom_moan_sounds = !prefs.use_custom_moan_sounds
+					dirty_var = "use_custom_moan_sounds"
 
 				if("verb_consent")
 					TOGGLE_BITFIELD(prefs.toggles, VERB_CONSENT)
@@ -1074,6 +1100,34 @@
 				return FALSE
 			parent_mob.playsound_local(get_turf(parent_mob), soundfile, 50, FALSE)
 			return TRUE
+		if("preview_moan_sound")
+			var/moan_file = resolve_moan_sound_key(params["sound_key"])
+			if(!moan_file)
+				return FALSE
+			parent_mob.playsound_local(get_turf(parent_mob), moan_file, 50, FALSE)
+			return TRUE
+		if("set_custom_moan_sounds")
+			var/datum/preferences/prefs = parent_mob.client?.prefs
+			if(!prefs)
+				return FALSE
+			var/list/requested = params["sound_keys"]
+			var/list/resolved = list()
+			if(islist(requested))
+				for(var/moan_key in requested)
+					var/moan_file = resolve_moan_sound_key(moan_key)
+					if(moan_file)
+						resolved += moan_file
+			prefs.custom_moan_sounds = resolved
+			prefs.save_pref_var("custom_moan_sounds")
+			return TRUE
+
+/datum/component/interaction_menu_granter/proc/resolve_moan_sound_key(moan_key)
+	if(!istext(moan_key))
+		return null
+	for(var/candidate in (GLOB.lewd_moans_male + GLOB.lewd_moans_female + GLOB.lewd_softmoans_female))
+		if("[candidate]" == moan_key)
+			return candidate
+	return null
 
 //BLUEMOON ADD START
 /datum/component/interaction_menu_granter/proc/play_pixel_shift_animation(mob/living/mob)
