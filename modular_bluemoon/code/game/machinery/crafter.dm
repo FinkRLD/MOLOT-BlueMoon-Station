@@ -287,13 +287,17 @@ GLOBAL_LIST_EMPTY(attackby_recipes)
 
 /obj/machinery/power/manufacturing/crafter/process(seconds_per_tick)
 	send_withheld()
-	if(!isnull(craft_timer))
-		if(surplus() >= power_cost)
-			add_load()
-		else
+
+	var/turf/my_turf = get_turf(src)
+	var/obj/structure/cable/C = my_turf?.get_cable_node()
+	if(!C?.powernet)
+		if(!isnull(craft_timer))
 			deltimer(craft_timer)
 			craft_timer = null
 			say("Power failure!")
+		return
+
+	if(!isnull(craft_timer))
 		return
 
 	if(!isnull(attackby_recipe))
