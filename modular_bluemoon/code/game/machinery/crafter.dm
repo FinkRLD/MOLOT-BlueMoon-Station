@@ -102,6 +102,10 @@ GLOBAL_LIST_EMPTY(attackby_recipes)
 		disconnect_from_network()
 	return TRUE
 
+/obj/machinery/power/manufacturing/crafter/wrench_act(mob/living/user, obj/item/tool)
+	. = ..()
+	update_printing_overlay()
+
 /obj/machinery/power/manufacturing/screwdriver_act(mob/living/user, obj/item/tool)
 	return default_deconstruction_screwdriver(user, tool)
 
@@ -155,6 +159,7 @@ GLOBAL_LIST_EMPTY(attackby_recipes)
 	var/datum/crafting_recipe/stack_wrap/stack_wrap_recipe
 	var/datum/component/personal_crafting/machine/craftsman
 	var/craft_timer
+	var/mutable_appearance/printing_overlay
 
 /obj/machinery/power/manufacturing/crafter/Initialize(mapload)
 	. = ..()
@@ -162,6 +167,12 @@ GLOBAL_LIST_EMPTY(attackby_recipes)
 	if(ispath(recipe))
 		recipe = locate(recipe) in GLOB.crafting_recipes
 	START_PROCESSING(SSobj, src)
+
+/obj/machinery/power/manufacturing/crafter/proc/update_printing_overlay()
+	cut_overlays()
+	if(anchored && (!isnull(attackby_recipe) || !isnull(stack_wrap_recipe) || !isnull(recipe)))
+		printing_overlay = mutable_appearance(icon, "crafter_printing")
+		add_overlay(printing_overlay)
 
 /obj/machinery/power/manufacturing/crafter/examine(mob/user)
 	. = ..()
@@ -275,6 +286,7 @@ GLOBAL_LIST_EMPTY(attackby_recipes)
 		recipe = result
 
 	balloon_alert(user, "set")
+	update_printing_overlay()
 	return TRUE
 
 /obj/machinery/power/manufacturing/crafter/Destroy()
@@ -508,4 +520,5 @@ GLOBAL_LIST_EMPTY(attackby_recipes)
 	stack_wrap_recipe = null
 
 	balloon_alert(user, "set")
+	update_printing_overlay()
 	return TRUE
