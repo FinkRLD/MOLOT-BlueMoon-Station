@@ -290,7 +290,7 @@ GLOBAL_LIST_EMPTY(attackby_recipes)
 
 	var/turf/my_turf = get_turf(src)
 	var/obj/structure/cable/C = my_turf?.get_cable_node()
-	if(!C?.powernet)
+	if(!C?.powernet || C.powernet.avail < power_cost)
 		if(!isnull(craft_timer))
 			deltimer(craft_timer)
 			craft_timer = null
