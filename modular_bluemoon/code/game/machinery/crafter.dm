@@ -143,12 +143,12 @@ GLOBAL_LIST_EMPTY(attackby_recipes)
 // ==================== CRAFTER (craft + attackby + stack) ====================
 
 /obj/machinery/power/manufacturing/crafter
-	name = "assembling crafter"
-	desc = "Assembles (crafts) the set recipe until it runs out of resources. Only resources on it will be used. Use multitool to set the recipe."
+	name = "factorio crafter"
+	desc = "Assembles (crafts) the set recipe until it runs out of resources. Only resources on it will be used."
 	icon_state = "crafter"
 	density = FALSE
 	circuit = /obj/item/circuitboard/machine/manucrafter
-	var/power_cost = 5 KILO WATTS
+	active_power_usage = 5 KILO WATTS
 	var/list/datum/weakref/withheld = list()
 	var/datum/crafting_recipe/recipe
 	var/datum/crafting_recipe/attackby/attackby_recipe
@@ -287,15 +287,6 @@ GLOBAL_LIST_EMPTY(attackby_recipes)
 
 /obj/machinery/power/manufacturing/crafter/process(seconds_per_tick)
 	send_withheld()
-
-	var/turf/my_turf = get_turf(src)
-	var/obj/structure/cable/C = my_turf?.get_cable_node()
-	if(!C?.powernet || C.powernet.avail > power_cost)
-		if(!isnull(craft_timer))
-			deltimer(craft_timer)
-			craft_timer = null
-			say("Power failure!")
-		return
 
 	if(!isnull(craft_timer))
 		return
