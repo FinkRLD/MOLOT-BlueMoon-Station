@@ -1610,7 +1610,7 @@
 
 /obj/item/circuitboard/machine/manucrafter/cooker
 	name = "Manufacturing Cooking Machine (Machine Board)"
-	icon_state = "engineering"
+	icon_state = "service"
 	build_path = /obj/machinery/power/manufacturing/crafter/cooker
 
 /obj/item/circuitboard/machine/circuit_imprinter/hacked // BLUEMOON ADD
