@@ -1095,7 +1095,7 @@
 		return
 	var/mob/living/carbon/human/wearer = loc
 	var/obj/item/organ/genital/breasts/breast = wearer.getorganslot(ORGAN_SLOT_BREASTS)
-	var/breast_size = clamp(round(breast?.size || 0), 0, 6) // просьба, дабы не конфликтовала с плитой/курткой
+	var/breast_size = clamp(round(breast?.size || 0), 0, 8)
 	icon_state = "melatonin-uniform-[breast_size]"
 	wearer.update_inv_w_uniform()
 	wearer.update_body()
@@ -1139,3 +1139,15 @@
 		else
 			desc = "Модная диско-майка и широкие рваные джинсы. Раньше верх этого наряда явно был чище и опрятнее. Если вы вдруг считаете, что Диско давно осталось в прошлом и мертво, то вы просто не достойны носить шмотки пьяной суперзвезды из Ревашоля. К слову, ткань на редкость удачно скроена — она крайне удобно обтягивает тело и надежно поддерживает вашу тяжеленную грудь."
 		update_icon()
+
+/obj/item/clothing/under/donator/bm/caligram
+	name = "Caligram uniform"
+	desc = "With a suit lined with this many pockets, you are ready to operate." //описание /obj/item/clothing/under/syndicate/combat
+	mutantrace_variation = STYLE_DIGITIGRADE
+	icon_state = "caligram_fatigues_tan"
+	item_state = "caligram_fatigues_tan"
+	can_adjust = TRUE
+	unique_reskin = list(
+		"blue" = list("icon_state" = "caligram_fatigues_blue"),
+		"tan" = list("icon_state" = "caligram_fatigues_tan"),
+	)
