@@ -327,9 +327,7 @@
 
 	var/list/preferred_moans = client?.prefs?.use_custom_moan_sounds ? client.prefs.custom_moan_sounds : null
 	if(LAZYLEN(preferred_moans))
-		var/list/allowed_moans = moans & preferred_moans
-		if(length(allowed_moans))
-			moans = allowed_moans
+		moans = preferred_moans
 
 	// Pick a sound from the list.
 	var/sound = pick(moans)

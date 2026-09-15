@@ -102,7 +102,10 @@
 	use_moaning_multiplier = sanitize_integer(use_moaning_multiplier, 0, 1, initial(use_moaning_multiplier))
 	moaning_multiplier = sanitize_integer(moaning_multiplier, 0, 100, initial(moaning_multiplier))
 	use_custom_moan_sounds = sanitize_integer(use_custom_moan_sounds, 0, 1, initial(use_custom_moan_sounds))
-	custom_moan_sounds = SANITIZE_LIST(custom_moan_sounds) & (GLOB.lewd_moans_male + GLOB.lewd_moans_female + GLOB.lewd_softmoans_female)
+	var/list/valid_moan_paths = GLOB.lewd_moans_male + GLOB.lewd_moans_female + GLOB.lewd_softmoans_female + GLOB.lewd_purr_sounds + GLOB.lewd_meow_sounds + GLOB.lewd_fox_sounds + GLOB.lewd_dog_sounds + GLOB.lewd_bird_sounds + GLOB.lewd_robot_sounds + GLOB.lewd_insect_sounds + GLOB.lewd_scream_female + GLOB.lewd_scream_male + GLOB.lewd_scream_gachi
+	for(var/name in GLOB.lewd_other_animal_sounds)
+		valid_moan_paths += GLOB.lewd_other_animal_sounds[name]
+	custom_moan_sounds = SANITIZE_LIST(custom_moan_sounds) & valid_moan_paths
 	.["favorite_tracks"] >> favorite_tracks
 	favorite_tracks = sanitize_jukebox_track_list(favorite_tracks)
 	.["favorite_paintings_md5"] >> favorite_paintings_md5

@@ -698,6 +698,34 @@ export const CustomInteractionsTab = (props) => {
               )}
               <Stack.Item>
                 <Box color="label" nowrap>Можно выбрать несколько - сработает случайный:</Box>
+                {(() => {
+                  const allSelected = moanSoundsInGroup.length > 0
+                    && moanSoundsInGroup.every(s => customMoanSounds.includes(s.key));
+                  return (
+                    <Button
+                      fluid
+                      icon={allSelected ? "times" : "check-double"}
+                      color={allSelected ? "red" : "transparent"}
+                      content={allSelected
+                        ? "Отписаться от всех звуков в категории"
+                        : "Подписаться на все звуки в категории"}
+                      onClick={() => {
+                        if (allSelected) {
+                          const otherKeys = customMoanSounds.filter(
+                            k => !moanSoundsInGroup.some(s => s.key === k)
+                          );
+                          act('set_custom_moan_sounds', { sound_keys: otherKeys });
+                        } else {
+                          const groupKeys = moanSoundsInGroup.map(s => s.key);
+                          const otherKeys = customMoanSounds.filter(
+                            k => !moanSoundsInGroup.some(s => s.key === k)
+                          );
+                          act('set_custom_moan_sounds', { sound_keys: [...otherKeys, ...groupKeys] });
+                        }
+                      }}
+                    />
+                  );
+                })()}
                 <Stack vertical>
                   {moanSoundsInGroup.map(sound => {
                     const checked = customMoanSounds.includes(sound.key);
