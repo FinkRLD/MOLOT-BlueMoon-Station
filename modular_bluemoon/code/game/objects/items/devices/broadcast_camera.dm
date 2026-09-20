@@ -43,7 +43,7 @@
 	. += span_notice("Broadcast name is <b>[broadcast_name]</b>")
 	. += span_notice("The microphone is <b>[active_microphone ? "On" : "Off"]</b>")
 
-/obj/item/broadcast_camera/on_enter_storage(datum/storage/master_storage)
+/obj/item/broadcast_camera/on_enter_storage()
 	. = ..()
 	if(active)
 		active = FALSE
@@ -57,7 +57,7 @@
 		update_icon_state()
 		set_light_on(FALSE)
 
-/* добавим в карго и куратору раундстарт, когда доделаем систему вещания
+/* добавим в карго и куратору раундстарт, когда доделаем tg систему вещания
 /obj/item/broadcast_camera/cargo
 	slowdown = 0.3
 	item_flags = parent_type::item_flags | SLOWS_WHILE_IN_HAND
