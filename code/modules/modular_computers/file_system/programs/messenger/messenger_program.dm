@@ -474,15 +474,9 @@ GLOBAL_VAR_INIT(pda_messenger_directory_time, -1)
 
 	// BLUEMOON ADD: балансы для переводов в чате
 	var/credits_balance = 0
-	if(isliving(user))
-		var/mob/living/living_user = user
-		var/datum/bank_account/sender_acc = living_user.get_bank_account()
-		if(!sender_acc)
-			var/obj/item/modular_computer/pda/sender_pda = computer
-			if(istype(sender_pda) && sender_pda.stored_id?.registered_account)
-				sender_acc = sender_pda.stored_id.registered_account
-		if(sender_acc)
-			credits_balance = sender_acc.account_balance
+	var/obj/item/modular_computer/sender_comp = computer
+	if(istype(sender_comp) && sender_comp.stored_id?.registered_account)
+		credits_balance = sender_comp.stored_id.registered_account.account_balance
 	data["credits_balance"] = credits_balance
 	data["metadollar_balance"] = user?.client?.ckey ? SSmetadollars.get_metadollars(user.client.ckey) : 0
 	return data
@@ -599,13 +593,13 @@ GLOBAL_VAR_INIT(pda_messenger_directory_time, -1)
 	return transfer_credits_to_chat(user, target_messenger, target_chat, amount, sender_name, recipient_name)
 
 /datum/computer_file/program/messenger/proc/transfer_credits_to_chat(mob/living/user, datum/computer_file/program/messenger/target_messenger, datum/pda_chat/target_chat, amount, sender_name, recipient_name)
-	var/datum/bank_account/sender_acc = user.get_bank_account()
+	var/obj/item/modular_computer/sender_comp = computer
+	if(!istype(sender_comp) || !sender_comp.stored_id)
+		to_chat(user, span_warning("Карта не вставлена в PDA. Вставьте ID-карту для перевода."))
+		return FALSE
+	var/datum/bank_account/sender_acc = sender_comp.stored_id.registered_account
 	if(!sender_acc)
-		var/obj/item/modular_computer/pda/sender_pda = computer
-		if(istype(sender_pda) && sender_pda.stored_id?.registered_account)
-			sender_acc = sender_pda.stored_id.registered_account
-	if(!sender_acc)
-		to_chat(user, span_warning("Нет банковского счёта. Вставьте ID-карту с привязанным счётом."))
+		to_chat(user, span_warning("На вставленной ID-карте нет банковского счёта."))
 		return FALSE
 	var/datum/bank_account/recipient_acc = null
 	var/obj/item/modular_computer/pda/recip_pda = target_messenger.computer
@@ -640,7 +634,7 @@ GLOBAL_VAR_INIT(pda_messenger_directory_time, -1)
 	recipient_acc.bank_card_talk("Получен перевод [amount] кр. от [sender_acc.account_holder]. Баланс: [recipient_acc.account_balance] кр.", TRUE)
 
 	var/time_now = STATION_TIME_TIMESTAMP(PDA_MESSAGE_TIMESTAMP_FORMAT, world.time)
-	var/datum/pda_message/out_msg = new("💰 Перевод: [amount] кр. → [recipient_name]", TRUE, time_now, null, FALSE)
+	var/datum/pda_message/out_msg = new("💵 Перевод: [amount] сr. → [recipient_name]. Баланс: [sender_acc.account_balance] сr.", TRUE, time_now, null, FALSE)
 	target_chat.add_message(out_msg, show_in_recents = TRUE)
 	target_chat.unread_messages = 0
 
@@ -649,11 +643,11 @@ GLOBAL_VAR_INIT(pda_messenger_directory_time, -1)
 	if(!istype(recip_chat))
 		recip_chat = target_messenger.create_chat(REF(src))
 	if(istype(recip_chat))
-		var/datum/pda_message/in_msg = new("💰 Получено: [amount] кр. от [sender_name]", FALSE, time_now, null, FALSE)
+		var/datum/pda_message/in_msg = new("💵 Получен перевод: [amount] сr. от [sender_name]. Баланс: [recipient_acc.account_balance] сr.", FALSE, time_now, null, FALSE)
 		recip_chat.add_message(in_msg)
 		recip_chat.unread_messages++
 
-	to_chat(user, span_notice("Перевод [amount] кр. отправлен: [recipient_name]."))
+	to_chat(user, span_notice("Перевод [amount] сr. отправлен: [recipient_name]."))
 	SStgui.update_uis(computer)
 	if(target_messenger.computer)
 		SStgui.update_uis(target_messenger.computer)
@@ -683,8 +677,11 @@ GLOBAL_VAR_INIT(pda_messenger_directory_time, -1)
 
 	log_admin("METADOLLAR: [sender_name] ([sender_ckey]) перевёл [amount] M$ получателю [recipient_name] ([recipient_ckey]) через PDA Messenger.")
 
+	var/sender_new_balance = SSmetadollars.get_metadollars(sender_ckey)
+	var/recipient_new_balance = SSmetadollars.get_metadollars(recipient_ckey)
+
 	var/time_now = STATION_TIME_TIMESTAMP(PDA_MESSAGE_TIMESTAMP_FORMAT, world.time)
-	var/datum/pda_message/out_msg = new("💰 Перевод: [amount] M$ → [recipient_name]", TRUE, time_now, null, FALSE)
+	var/datum/pda_message/out_msg = new("💵 Перевод: [amount] M$ → [recipient_name]. Баланс: [sender_new_balance] M$.", TRUE, time_now, null, FALSE)
 	target_chat.add_message(out_msg, show_in_recents = TRUE)
 	target_chat.unread_messages = 0
 
@@ -692,7 +689,7 @@ GLOBAL_VAR_INIT(pda_messenger_directory_time, -1)
 	if(!istype(recip_chat))
 		recip_chat = target_messenger.create_chat(REF(src))
 	if(istype(recip_chat))
-		var/datum/pda_message/in_msg = new("💰 Получен перевод: [amount] M$ от [sender_name]", FALSE, time_now, null, FALSE)
+		var/datum/pda_message/in_msg = new("💵 Получен перевод: [amount] M$ от [sender_name]. Баланс: [recipient_new_balance] M$.", FALSE, time_now, null, FALSE)
 		recip_chat.add_message(in_msg)
 		recip_chat.unread_messages++
 
