@@ -541,8 +541,7 @@ GLOBAL_VAR_INIT(pda_messenger_directory_time, -1)
 	if(send_message(user, message, chats, everyone = TRUE))
 		COOLDOWN_START(src, last_text_everyone, 2 MINUTES)
 
-/// BLUEMOON ADD: перевод денег собеседнику из чата (кредиты / метадоллары)
-/// target_ref — REF чата или REF мессенджера получателя
+// BLUEMOON ADD: перевод денег собеседнику из чата
 /datum/computer_file/program/messenger/proc/transfer_money_to_chat(mob/living/user, target_ref, amount, currency = "credits")
 	if(!istype(user) || isobserver(user))
 		return FALSE
@@ -556,7 +555,7 @@ GLOBAL_VAR_INIT(pda_messenger_directory_time, -1)
 	if(!user.canUseTopic(computer, BE_CLOSE, check_resting = FALSE))
 		return FALSE
 
-	// Резолвим получателя так же, как в PDA_sendMessage
+
 	var/datum/pda_chat/target_chat = null
 	var/datum/computer_file/program/messenger/target_messenger = null
 	if(target_ref in saved_chats)
@@ -693,7 +692,7 @@ GLOBAL_VAR_INIT(pda_messenger_directory_time, -1)
 	if(!istype(recip_chat))
 		recip_chat = target_messenger.create_chat(REF(src))
 	if(istype(recip_chat))
-		var/datum/pda_message/in_msg = new("💰 Получено: [amount] M$ от [sender_name]", FALSE, time_now, null, FALSE)
+		var/datum/pda_message/in_msg = new("💰 Получен перевод: [amount] M$ от [sender_name]", FALSE, time_now, null, FALSE)
 		recip_chat.add_message(in_msg)
 		recip_chat.unread_messages++
 
@@ -705,7 +704,7 @@ GLOBAL_VAR_INIT(pda_messenger_directory_time, -1)
 		SStgui.update_uis(target_messenger.computer)
 	return TRUE
 
-/// Ищет ckey владельца мессенджера: держатель PDA или совпадение по имени персонажа
+
 /datum/computer_file/program/messenger/proc/get_messenger_ckey(datum/computer_file/program/messenger/target_messenger)
 	if(!istype(target_messenger) || !istype(target_messenger.computer))
 		return null
