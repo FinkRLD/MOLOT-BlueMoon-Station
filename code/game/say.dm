@@ -98,6 +98,18 @@ GLOBAL_LIST_INIT(freqtospan, list(
 	var/spanpart2 = "<span class='name'>"
 	//Radio freq/name display
 	var/freqpart = radio_freq ? "\[[get_radio_name(radio_freq)]\] " : ""
+	// BLUEMOON ADD START - показываем профессию говорящего в рацию как [должность] перед именем.
+	// Цвет - по отделам, инлайном (см. get_radio_job_class/get_radio_job_hex).
+	var/jobpart = ""
+	if(radio_freq)
+		var/speaker_job = speaker.GetJob()
+		if(speaker_job && speaker_job != "" && speaker_job != "Unknown" && speaker_job != "No ID")
+			if(speaker.GetVoice() != "Unknown")
+				var/job_class = speaker.GetJobClass()
+				if(!job_class || job_class == "")
+					job_class = get_radio_job_class(null, speaker_job)
+				jobpart = "<span class='radiojob [job_class]' style='color: [get_radio_job_hex(job_class)]'>\[[speaker_job]\]</span> "
+	// BLUEMOON ADD END
 	//Speaker name
 	var/namepart = "[speaker.GetVoice()][speaker.get_alt_name()]"
 	if(face_name && ishuman(speaker))
@@ -114,7 +126,7 @@ GLOBAL_LIST_INIT(freqtospan, list(
 	if(istype(D) && D.display_icon(src))
 		languageicon = "[D.get_icon()] "
 
-	return "[spanpart1][spanpart2][freqpart][languageicon][compose_track_href(speaker, namepart)][namepart][compose_job(speaker, message_language, raw_message, radio_freq)][endspanpart][messagepart]"
+	return "[spanpart1][spanpart2][freqpart][jobpart][languageicon][compose_track_href(speaker, namepart)][namepart][compose_job(speaker, message_language, raw_message, radio_freq)][endspanpart][messagepart]"
 
 /atom/movable/proc/compose_track_href(atom/movable/speaker, message_langs, raw_message, radio_freq)
 	return ""
@@ -233,6 +245,90 @@ GLOBAL_LIST_INIT(freqtospan, list(
 		return returntext
 	return "[copytext_char("[freq]", 1, 4)].[copytext_char("[freq]", 4, 5)]"
 
+// BLUEMOON ADD START - цвет [должности] в рации по отделам.
+/proc/get_radio_job_class(base_job, display_job)
+	// Клоун (включая альт-тайтлы через base) - всегда светло-розовый, отдельно от сервиса
+	if(base_job == "Clown")
+		return "radiojob-clown"
+	if(display_job)
+		var/lower_display = lowertext(display_job)
+		if(lower_display == "clown" || lower_display == "comedian" || lower_display == "cumedian" || lower_display == "jester" || lower_display == "joker" || lower_display == "sexy clown")
+			return "radiojob-clown"
+	var/datum/job/J
+	if(base_job)
+		J = SSjob.GetJob(base_job)
+	if(!J && display_job && display_job != base_job)
+		J = SSjob.GetJob(display_job)
+	if(J)
+		var/deps = J.departments
+		if(deps & DEPARTMENT_BITFLAG_COMMAND)
+			return "radiojob-cmd"
+		if(deps & DEPARTMENT_BITFLAG_SECURITY)
+			return "radiojob-sec"
+		if(deps & DEPARTMENT_BITFLAG_ENGINEERING)
+			return "radiojob-eng"
+		if(deps & DEPARTMENT_BITFLAG_MEDICAL)
+			return "radiojob-med"
+		if(deps & DEPARTMENT_BITFLAG_SCIENCE)
+			return "radiojob-sci"
+		if(deps & DEPARTMENT_BITFLAG_SUPPLY)
+			return "radiojob-cargo"
+		if(deps & DEPARTMENT_BITFLAG_LAW)
+			return "radiojob-law"
+		if(deps & DEPARTMENT_BITFLAG_SERVICE)
+			return "radiojob-srv"
+		if(deps & DEPARTMENT_BITFLAG_SILICON)
+			return "radiojob-silicon"
+		return "radiojob-unk"
+
+	if(display_job)
+		var/lower_display = lowertext(display_job)
+		if(findtext(lower_display, "clown") || findtext(lower_display, "клоун") || findtext(lower_display, "jester") || findtext(lower_display, "joker"))
+			return "radiojob-clown"
+		if(findtext(lower_display, "internal affairs") || findtext(lower_display, "magistrate") || findtext(lower_display, "representative") || findtext(lower_display, "lawyer") || findtext(lower_display, "авд") || findtext(lower_display, "юрист") || findtext(lower_display, "магистрат"))
+			return "radiojob-law"
+		if(findtext(lower_display, "captain") || findtext(lower_display, "head of") || findtext(lower_display, "chief") || findtext(lower_display, "director") || findtext(lower_display, "quartermaster") || findtext(lower_display, "blueshield") || findtext(lower_display, "bridge") || findtext(lower_display, "капитан") || findtext(lower_display, "глава") || findtext(lower_display, "директор"))
+			return "radiojob-cmd"
+		if(findtext(lower_display, "security") || findtext(lower_display, "warden") || findtext(lower_display, "detective") || findtext(lower_display, "peacekeeper") || findtext(lower_display, "brig") || findtext(lower_display, "prisoner") || findtext(lower_display, "officer") || findtext(lower_display, "сб") || findtext(lower_display, "офицер") || findtext(lower_display, "смотритель"))
+			return "radiojob-sec"
+		if(findtext(lower_display, "engineer") || findtext(lower_display, "atmos") || findtext(lower_display, "инженер"))
+			return "radiojob-eng"
+		if(findtext(lower_display, "doctor") || findtext(lower_display, "chemist") || findtext(lower_display, "virologist") || findtext(lower_display, "paramedic") || findtext(lower_display, "psychologist") || findtext(lower_display, "geneticist") || findtext(lower_display, "medical") || findtext(lower_display, "brig physician") || findtext(lower_display, "медик") || findtext(lower_display, "врач") || findtext(lower_display, "химик"))
+			return "radiojob-med"
+		if(findtext(lower_display, "scientist") || findtext(lower_display, "roboticist") || findtext(lower_display, "vanguard") || findtext(lower_display, "учён") || findtext(lower_display, "учен"))
+			return "radiojob-sci"
+		if(findtext(lower_display, "cargo") || findtext(lower_display, "miner") || findtext(lower_display, "shaft") || findtext(lower_display, "карго") || findtext(lower_display, "грузчик") || findtext(lower_display, "шахт"))
+			return "radiojob-cargo"
+		if(findtext(lower_display, "bartender") || findtext(lower_display, "botanist") || findtext(lower_display, "cook") || findtext(lower_display, "janitor") || findtext(lower_display, "chaplain") || findtext(lower_display, "curator") || findtext(lower_display, "assistant") || findtext(lower_display, "mime") || findtext(lower_display, "bouncer") || findtext(lower_display, "бармен") || findtext(lower_display, "повар") || findtext(lower_display, "уборщик") || findtext(lower_display, "ассистент"))
+			return "radiojob-srv"
+		if(findtext(lower_display, "ai") || findtext(lower_display, "cyborg") || findtext(lower_display, "борг") || findtext(lower_display, "ии"))
+			return "radiojob-silicon"
+	return "radiojob-unk"
+
+
+/proc/get_radio_job_hex(job_class)
+	switch(job_class)
+		if("radiojob-cmd")
+			return "#0d39ff"
+		if("radiojob-sec")
+			return "#c41e1e"
+		if("radiojob-eng")
+			return "#d39700"
+		if("radiojob-med")
+			return "#2b8fc4"
+		if("radiojob-sci")
+			return "#8e44cc"
+		if("radiojob-cargo")
+			return "#634a27"
+		if("radiojob-srv")
+			return "#2eb82e"
+		if("radiojob-law", "radiojob-clown")
+			return "#e0509a"
+		if("radiojob-silicon")
+			return "#8a8a8a"
+	return "#999999"
+// BLUEMOON ADD END
+
 /atom/movable/proc/attach_spans(input, list/spans)
 	if(!length(input))
 		return
@@ -274,6 +370,8 @@ GLOBAL_LIST_INIT(freqtospan, list(
 
 /atom/movable/proc/GetJob() //Get a job, you lazy butte
 
+/atom/movable/proc/GetJobClass()
+
 /atom/movable/proc/GetSource()
 
 /atom/movable/proc/GetRadio()
@@ -281,6 +379,7 @@ GLOBAL_LIST_INIT(freqtospan, list(
 //VIRTUALSPEAKERS
 /atom/movable/virtualspeaker
 	var/job
+	var/job_class
 	var/atom/movable/source
 	var/obj/item/radio/radio
 
@@ -297,27 +396,53 @@ INITIALIZE_IMMEDIATE(/atom/movable/virtualspeaker)
 		verb_yell = M.verb_yell
 
 	// The mob's job identity
+	// BLUEMOON EDIT START
 	if(ishuman(M))
-		// Humans use their job as seen on the crew manifest. This is so the AI
-		// can know their job even if they don't carry an ID.
-		var/datum/data/record/findjob = GLOB.data_core.general_by_name[name]
-		if(findjob)
-			job = findjob.fields["rank"]
+		var/mob/living/carbon/human/H = M
+		var/obj/item/card/id/idcard = H.wear_id?.GetID()
+		if(!idcard)
+			idcard = H.wear_neck?.GetID()
+		if(!idcard && H.belt)
+			idcard = H.belt?.GetID()
+		if(idcard)
+			job = idcard.get_assignment_name()
+			if(!job || job == "")
+				job = null
+				job_class = null
+			else
+				job_class = get_radio_job_class(idcard.assignment, job)
 		else
-			job = "Unknown"
+			if(istype(H.wear_id, /obj/item/modular_computer/pda))
+				var/obj/item/modular_computer/pda/worn_pda = H.wear_id
+				if(worn_pda.ownjob && worn_pda.ownjob != "")
+					job = worn_pda.ownjob
+					job_class = get_radio_job_class(null, job)
+				else
+					job = null
+					job_class = null
+			else
+				job = null
+				job_class = null
+	// BLUEMOON EDIT END
 	else if(iscarbon(M))  // Carbon nonhuman
 		job = "No ID"
+		job_class = null
 	else if(isAI(M))  // AI
 		job = "AI"
+		job_class = "radiojob-silicon"
 	else if(iscyborg(M))  // Cyborg
 		var/mob/living/silicon/robot/B = M
 		job = "[B.designation] Cyborg"
+		job_class = "radiojob-silicon"
 	else if(istype(M, /mob/living/silicon/pai))  // Personal AI (pAI)
 		job = M.GetJob()
+		job_class = "radiojob-silicon"
 	else if(isobj(M))  // Cold, emotionless machines
 		job = "Machine"
+		job_class = "radiojob-unk"
 	else  // Unidentifiable mob
 		job = "Unknown"
+		job_class = null
 
 /atom/movable/virtualspeaker/Destroy()
 	set_source(null)
@@ -354,6 +479,9 @@ INITIALIZE_IMMEDIATE(/atom/movable/virtualspeaker)
 
 /atom/movable/virtualspeaker/GetJob()
 	return job
+
+/atom/movable/virtualspeaker/GetJobClass()
+	return job_class
 
 /atom/movable/virtualspeaker/GetSource()
 	return source
