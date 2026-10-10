@@ -98,7 +98,6 @@ GLOBAL_LIST_INIT(freqtospan, list(
 	var/spanpart2 = "<span class='name'>"
 	//Radio freq/name display
 	var/freqpart = radio_freq ? "\[[get_radio_name(radio_freq)]\] " : ""
-	// BLUEMOON ADD START - показываем профессию говорящего в рацию как [должность] перед именем.
 	var/jobpart = ""
 	if(radio_freq)
 		var/speaker_job = speaker.GetJob()
@@ -108,7 +107,6 @@ GLOBAL_LIST_INIT(freqtospan, list(
 				if(!job_class || job_class == "")
 					job_class = get_radio_job_class(null, speaker_job)
 				jobpart = "<span class='radiojob [job_class]' style='color: [get_radio_job_hex(job_class)]'>\[[speaker_job]\]</span> "
-	// BLUEMOON ADD END
 	//Speaker name
 	var/namepart = "[speaker.GetVoice()][speaker.get_alt_name()]"
 	if(face_name && ishuman(speaker))
@@ -244,7 +242,6 @@ GLOBAL_LIST_INIT(freqtospan, list(
 		return returntext
 	return "[copytext_char("[freq]", 1, 4)].[copytext_char("[freq]", 4, 5)]"
 
-// BLUEMOON ADD START - цвет [должности] в рации по отделам.
 /proc/get_radio_job_class(base_job, display_job)
 
 	if(base_job == "Clown")
@@ -253,6 +250,28 @@ GLOBAL_LIST_INIT(freqtospan, list(
 		var/lower_display = lowertext(display_job)
 		if(lower_display == "clown" || lower_display == "comedian" || lower_display == "cumedian" || lower_display == "jester" || lower_display == "joker" || lower_display == "sexy clown")
 			return "radiojob-clown"
+	var/combined = ""
+	if(base_job)
+		combined += "[lowertext(base_job)]|"
+	if(display_job)
+		combined += "[lowertext(display_job)]"
+	if(combined != "" && combined != "|")
+		if(findtext(combined, "syndicate") || findtext(combined, "syndicom") || findtext(combined, "синдикат") || findtext(combined, "ds-1") || findtext(combined, "ds-2") || findtext(combined, "ds1") || findtext(combined, "ds2"))
+			return "radiojob-synd"
+		if(findtext(combined, "inteq") || findtext(combined, "интек") || findtext(combined, "vanguard") || findtext(combined, "авангард") || findtext(combined, "mercenary") || findtext(combined, "наемник") || findtext(combined, "наёмник"))
+			return "radiojob-inteq"
+		if(findtext(combined, "tarkov") || findtext(combined, "tarkoff") || findtext(combined, "тарков") || findtext(combined, "таркон"))
+			return "radiojob-tarkon"
+		if(findtext(combined, "pirate") || findtext(combined, "пират"))
+			return "radiojob-pirate"
+		if(findtext(combined, "solfed") || findtext(combined, "sol fed") || findtext(combined, "sol federation"))
+			return "radiojob-sol"
+		if(findtext(combined, "nri"))
+			return "radiojob-nri"
+		if(findtext(combined, "hotel") || findtext(combined, "отель"))
+			return "radiojob-hotel"
+		if(findtext(combined, "centcom") || findtext(combined, "central command") || findtext(combined, "emergency response") || findtext(combined, "death commando") || findtext(combined, "response officer") || findtext(combined, "health safety"))
+			return "radiojob-centcom"
 	var/datum/job/J
 	if(base_job)
 		J = SSjob.GetJob(base_job)
@@ -294,11 +313,11 @@ GLOBAL_LIST_INIT(freqtospan, list(
 			return "radiojob-eng"
 		if(findtext(lower_display, "doctor") || findtext(lower_display, "chemist") || findtext(lower_display, "virologist") || findtext(lower_display, "paramedic") || findtext(lower_display, "psychologist") || findtext(lower_display, "geneticist") || findtext(lower_display, "medical") || findtext(lower_display, "brig physician") || findtext(lower_display, "медик") || findtext(lower_display, "врач") || findtext(lower_display, "химик"))
 			return "radiojob-med"
-		if(findtext(lower_display, "scientist") || findtext(lower_display, "roboticist") || findtext(lower_display, "vanguard") || findtext(lower_display, "учён") || findtext(lower_display, "учен"))
+		if(findtext(lower_display, "scientist") || findtext(lower_display, "roboticist") || findtext(lower_display, "учён") || findtext(lower_display, "учен"))
 			return "radiojob-sci"
 		if(findtext(lower_display, "cargo") || findtext(lower_display, "miner") || findtext(lower_display, "shaft") || findtext(lower_display, "карго") || findtext(lower_display, "грузчик") || findtext(lower_display, "шахт"))
 			return "radiojob-cargo"
-		if(findtext(lower_display, "bartender") || findtext(lower_display, "botanist") || findtext(lower_display, "cook") || findtext(lower_display, "janitor") || findtext(lower_display, "chaplain") || findtext(lower_display, "curator") || findtext(lower_display, "assistant") || findtext(lower_display, "mime") || findtext(lower_display, "bouncer") || findtext(lower_display, "бармен") || findtext(lower_display, "повар") || findtext(lower_display, "уборщик") || findtext(lower_display, "ассистент"))
+		if(findtext(lower_display, "bartender") || findtext(lower_display, "botanist") || findtext(lower_display, "cook") || findtext(lower_display, "janitor") || findtext(lower_display, "jannie") || findtext(lower_display, "chaplain") || findtext(lower_display, "curator") || findtext(lower_display, "assistant") || findtext(lower_display, "mime") || findtext(lower_display, "bouncer") || findtext(lower_display, "бармен") || findtext(lower_display, "повар") || findtext(lower_display, "уборщик") || findtext(lower_display, "ассистент"))
 			return "radiojob-srv"
 		if(findtext(lower_display, "ai") || findtext(lower_display, "cyborg") || findtext(lower_display, "борг") || findtext(lower_display, "ии"))
 			return "radiojob-silicon"
@@ -308,25 +327,40 @@ GLOBAL_LIST_INIT(freqtospan, list(
 /proc/get_radio_job_hex(job_class)
 	switch(job_class)
 		if("radiojob-cmd")
-			return "#2e51ec"
+			return "#fcdf03"
 		if("radiojob-sec")
-			return "#c41e1e"
+			return "#dd3535"
 		if("radiojob-eng")
-			return "#d39700"
+			return "#f37746"
 		if("radiojob-med")
-			return "#2b8fc4"
+			return "#57b8f0"
 		if("radiojob-sci")
-			return "#8e44cc"
+			return "#c68cfa"
 		if("radiojob-cargo")
-			return "#634a27"
+			return "#b88646"
 		if("radiojob-srv")
-			return "#2eb82e"
+			return "#6ca729"
 		if("radiojob-law", "radiojob-clown")
-			return "#e0509a"
+			return "#ff69d7"
+		if("radiojob-synd")
+			return "#8f4a4b"
+		if("radiojob-inteq")
+			return "#e58200"
+		if("radiojob-tarkon")
+			return "#f37746"
+		if("radiojob-pirate")
+			return "#fafafa"
+		if("radiojob-sol")
+			return "#3434fd"
+		if("radiojob-nri")
+			return "#ff4444"
+		if("radiojob-hotel")
+			return "#6ca729"
+		if("radiojob-centcom")
+			return "#2681a5"
 		if("radiojob-silicon")
-			return "#8a8a8a"
-	return "#999999"
-// BLUEMOON ADD END
+			return "#9e9e9e"
+	return "#b0b0b0"
 
 /atom/movable/proc/attach_spans(input, list/spans)
 	if(!length(input))
@@ -395,7 +429,6 @@ INITIALIZE_IMMEDIATE(/atom/movable/virtualspeaker)
 		verb_yell = M.verb_yell
 
 	// The mob's job identity
-	// BLUEMOON EDIT START
 	if(ishuman(M))
 		var/mob/living/carbon/human/H = M
 		var/obj/item/card/id/idcard = H.wear_id?.GetID()
@@ -422,7 +455,6 @@ INITIALIZE_IMMEDIATE(/atom/movable/virtualspeaker)
 			else
 				job = null
 				job_class = null
-	// BLUEMOON EDIT END
 	else if(iscarbon(M))  // Carbon nonhuman
 		job = "No ID"
 		job_class = null
