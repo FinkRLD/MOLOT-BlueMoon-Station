@@ -99,7 +99,6 @@ GLOBAL_LIST_INIT(freqtospan, list(
 	//Radio freq/name display
 	var/freqpart = radio_freq ? "\[[get_radio_name(radio_freq)]\] " : ""
 	// BLUEMOON ADD START - показываем профессию говорящего в рацию как [должность] перед именем.
-	// Цвет - по отделам, инлайном (см. get_radio_job_class/get_radio_job_hex).
 	var/jobpart = ""
 	if(radio_freq)
 		var/speaker_job = speaker.GetJob()
@@ -247,7 +246,7 @@ GLOBAL_LIST_INIT(freqtospan, list(
 
 // BLUEMOON ADD START - цвет [должности] в рации по отделам.
 /proc/get_radio_job_class(base_job, display_job)
-	// Клоун (включая альт-тайтлы через base) - всегда светло-розовый, отдельно от сервиса
+
 	if(base_job == "Clown")
 		return "radiojob-clown"
 	if(display_job)
