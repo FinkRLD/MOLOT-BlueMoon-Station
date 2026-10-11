@@ -2,7 +2,7 @@
 
 //say based modes like binary are in living/say.dm
 // BlueMoon Edited
-#define RADIO_CHANNEL_COMMON "Cmn"
+#define RADIO_CHANNEL_COMMON "Общ"
 #define RADIO_KEY_COMMON ";"
 
 #define RADIO_CHANNEL_SECURITY "Sec"
@@ -13,7 +13,7 @@
 #define RADIO_KEY_ENGINEERING "e"
 #define RADIO_TOKEN_ENGINEERING ":e"
 
-#define RADIO_CHANNEL_COMMAND "Comd"
+#define RADIO_CHANNEL_COMMAND "Com"
 #define RADIO_KEY_COMMAND "c"
 #define RADIO_TOKEN_COMMAND ":c"
 
