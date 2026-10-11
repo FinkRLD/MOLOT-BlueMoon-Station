@@ -102,7 +102,7 @@ GLOBAL_LIST_INIT(freqtospan, list(
 	if(radio_freq)
 		var/speaker_job = speaker.GetJob()
 		var/lower_job = speaker_job ? lowertext(trimtext(speaker_job)) : ""
-		if(lower_job != "" && lower_job != "unknown" && lower_job != "no id")
+		if(lower_job != "" && lower_job != "unknown" && lower_job != "no id" && lower_job != "machine")
 			if(speaker.GetVoice() != "Unknown")
 				var/job_class = speaker.GetJobClass()
 				if(!job_class || job_class == "")
