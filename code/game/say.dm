@@ -273,11 +273,15 @@ GLOBAL_LIST_INIT(freqtospan, list(
 		return "radiojob-clown"
 	if(real == "Centcom")
 		return "radiojob-centcom"
+	if(real == "Bridge Officer")
+		return "radiojob-cmd"
+	if(real == "NanoTrasen Representative")
+		return "radiojob-cmd"
+	if(real == "Head of Personnel")
+		return "radiojob-cmd"
 	var/datum/job/J = SSjob.GetJob(real)
 	if(J)
 		var/deps = J.departments
-		if(deps & DEPARTMENT_BITFLAG_COMMAND)
-			return "radiojob-cmd"
 		if(deps & DEPARTMENT_BITFLAG_SECURITY)
 			return "radiojob-sec"
 		if(deps & DEPARTMENT_BITFLAG_ENGINEERING)
@@ -294,6 +298,8 @@ GLOBAL_LIST_INIT(freqtospan, list(
 			return "radiojob-srv"
 		if(deps & DEPARTMENT_BITFLAG_SILICON)
 			return "radiojob-silicon"
+		if(deps & DEPARTMENT_BITFLAG_COMMAND)
+			return "radiojob-cmd"
 		return "radiojob-unk"
 	return "radiojob-unk"
 
