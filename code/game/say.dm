@@ -279,6 +279,10 @@ GLOBAL_LIST_INIT(freqtospan, list(
 		return "radiojob-cmd"
 	if(real == "Head of Personnel")
 		return "radiojob-cmd"
+	if(real == "Assistant")
+		return "radiojob-asst"
+	if(real == "Peacekeeper")
+		return "radiojob-sec"
 	var/datum/job/J = SSjob.GetJob(real)
 	if(J)
 		var/deps = J.departments
@@ -322,6 +326,8 @@ GLOBAL_LIST_INIT(freqtospan, list(
 			return "#6ca729"
 		if("radiojob-law", "radiojob-clown")
 			return "#ff69d7"
+		if("radiojob-asst")
+			return "#1ecc43"
 		if("radiojob-synd")
 			return "#8f4a4b"
 		if("radiojob-inteq")
