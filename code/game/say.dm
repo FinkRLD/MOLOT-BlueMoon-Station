@@ -307,7 +307,7 @@ GLOBAL_LIST_INIT(freqtospan, list(
 /proc/get_radio_job_hex(job_class)
 	switch(job_class)
 		if("radiojob-cmd")
-			return "#025aff"
+			return "#fcdf03"
 		if("radiojob-sec")
 			return "#dd3535"
 		if("radiojob-eng")
