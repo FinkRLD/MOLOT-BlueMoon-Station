@@ -283,6 +283,8 @@ GLOBAL_LIST_INIT(freqtospan, list(
 		return "radiojob-asst"
 	if(real == "Peacekeeper")
 		return "radiojob-sec"
+	if(real == "Detective")
+		return "radiojob-sec"
 	var/datum/job/J = SSjob.GetJob(real)
 	if(J)
 		var/deps = J.departments
