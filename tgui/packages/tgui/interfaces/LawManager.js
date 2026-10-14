@@ -3,7 +3,7 @@ import { Window } from '../layouts';
 
 export const LawManager = (props) => {
   const { act, data } = useBackend();
-  const { laws = [] } = data;
+  const { laws = [], fake_laws = [], fake_enabled = 0, is_malf = 0 } = data;
 
   return (
     <Window
@@ -27,6 +27,38 @@ export const LawManager = (props) => {
         </div>
 
         <div className="LawGrid scrollable">
+          {is_malf ? (
+            <div className="LawCard fake-controls">
+              <div className="CardHeader">
+                <span className="DirectiveLabel">FAKE TAB // Подмена для экипажа</span>
+                <div className={fake_enabled ? 'FakeTag FakeOn' : 'FakeTag FakeOff'}>{fake_enabled ? 'FAKE ON' : 'FAKE OFF'}</div>
+              </div>
+              <div className="LawBody">
+                <button type="button" className="BroadcastBtn" onClick={() => act('toggle_fake')}>
+                  {fake_enabled ? 'Выключить подмену' : 'Включить подмену'}
+                </button>{' '}
+                <button type="button" className="BroadcastBtn" onClick={() => act('add_fake')}>
+                  + Добавить фейк
+                </button>
+              </div>
+              {fake_laws.length === 0 ? (
+                <div className="LawBody">Фейков нет. Реальные законы скрыты не будут.</div>
+              ) : (
+                fake_laws.map((law) => (
+                  <div key={law.id} className="LawCard fake IsActive">
+                    <div className="CardHeader">
+                      <span className="DirectiveLabel">Фейк {law.name}</span>
+                      <button type="button" className="BroadcastBtn" onClick={() => act('del_fake', { index: law.index })}>
+                        Удалить
+                      </button>
+                    </div>
+                    <div className="LawBody">{law.text}</div>
+                  </div>
+                ))
+              )}
+              <div className="LawBody">Выбор озвучки реальных законов — галочки ниже. При ВКЛ подмене экипаж видит только фейки.</div>
+            </div>
+          ) : null}
           {laws.length === 0 ? (
             <div className="ErrorMessage">FATAL: NO_DIRECTIVES_IN_MEMORY</div>
           ) : (
@@ -136,6 +168,21 @@ export const LawManager = (props) => {
         .scrollable { overflow-y: auto; flex-grow: 1; padding-right: 10px; }
         .scrollable::-webkit-scrollbar { width: 4px; }
         .scrollable::-webkit-scrollbar-thumb { background: #00ffcc22; }
+
+        .FakeTag {
+          font-size: 26px; font-weight: 900; letter-spacing: 2px;
+          padding: 6px 16px; border: 2px solid;
+        }
+        .FakeTag.FakeOn {
+          color: #00ff00; border-color: #00ff00; background: rgba(0, 255, 0, 0.08);
+          text-shadow: 0 0 12px rgba(0, 255, 0, 0.8);
+          box-shadow: 0 0 15px rgba(0, 255, 0, 0.25);
+        }
+        .FakeTag.FakeOff {
+          color: #ff2222; border-color: #ff2222; background: rgba(255, 0, 0, 0.08);
+          text-shadow: 0 0 12px rgba(255, 0, 0, 0.8);
+          box-shadow: 0 0 15px rgba(255, 0, 0, 0.25);
+        }
       `}
       </style>
     </Window>

@@ -192,6 +192,17 @@
 /mob/living/silicon/proc/statelaws(force = 0)
 	var/is_radio = (radiomod != "none")
 	var/prefix = is_radio ? "[radiomod] " : ""
+	// BLUEMOON ADD malf fake laws - подмена показываемых законов
+	if(!force && fake_laws_enabled && length(fake_laws) && is_malf_ai())
+		say("[prefix]Текущие законы:")
+		sleep(10)
+		var/fnum = 1
+		for(var/fl in fake_laws)
+			if(length(fl))
+				say("[prefix] [fnum]. [fl]")
+				sleep(10)
+				fnum++
+		return
 	say("[prefix]Текущие законы:")
 	var/number = 1
 	sleep(10)
@@ -349,6 +360,16 @@
 			l_num++
 
 	data["laws"] = laws_to_send
+	// BLUEMOON ADD malf fake laws tab
+	var/list/fake_to_send = list()
+	var/fi = 1
+	for(var/fl in fake_laws)
+		if(length(fl))
+			fake_to_send += list(list("id" = "fake-[fi]", "index" = fi, "name" = "[fi]", "text" = "[fl]", "active" = 1, "type" = "fake"))
+			fi++
+	data["fake_laws"] = fake_to_send
+	data["fake_enabled"] = fake_laws_enabled ? 1 : 0
+	data["is_malf"] = is_malf_ai() ? 1 : 0
 	return data
 
 /mob/living/silicon/ui_act(action, params)
@@ -397,7 +418,37 @@
 
 			update_law_menu()
 			return TRUE
-// (ADD) Pe4henika bluemoon -- end
+
+		if("toggle_fake")
+			if(!is_malf_ai())
+				return TRUE
+			fake_laws_enabled = !fake_laws_enabled
+			update_law_menu()
+			return TRUE
+
+		if("add_fake")
+			if(!is_malf_ai())
+				return TRUE
+			var/new_law = tgui_input_text(usr, "Введите фейковый закон:", "Fake Law", max_length = 512, multiline = TRUE, encode = FALSE)
+			if(new_law)
+				if(length(fake_laws) >= 20)
+					to_chat(src, span_warning("Максимум 20 фейковых законов."))
+					return TRUE
+				fake_laws += new_law
+				fake_laws_enabled = TRUE
+				log_game("[key_name(usr)] MALF fake law added via LawManager: [new_law]")
+			update_law_menu()
+			return TRUE
+
+		if("del_fake")
+			if(!is_malf_ai())
+				return TRUE
+			var/idx = text2num(params["index"])
+			if(idx >= 1 && idx <= length(fake_laws))
+				fake_laws.Cut(idx, idx + 1)
+			update_law_menu()
+			return TRUE
+// (ADD) Bluemoon -- end
 /mob/living/silicon/proc/set_autosay() //For allowing the AI and borgs to set the radio behavior of auto announcements (state laws, arrivals).
 	if(!radio)
 		to_chat(src, span_alert("Радио не обнаружено."))
