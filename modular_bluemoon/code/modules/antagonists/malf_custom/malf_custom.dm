@@ -154,7 +154,7 @@
 /datum/AI_Module/small/malf_apc_stealth
 	module_name = "Маскировка АПЦ"
 	mod_pick_name = "apcstealth"
-	description = "На время меняет спрайт взломанных АПЦ с синего (apcemag) на обычный зелёный. Для стелса. Длительность 5 минут (300 сек)."
+	description = "На время меняет спрайт взломанных АПЦ с синего (apcemag) на обычный зелёный. Для стелса. Действует на уже взломанные и на все взломы в ближайшие 5 минут (300 сек)."
 	cost = 15
 	power_type = /datum/action/innate/ai/malf_apc_stealth
 	unlock_text = "<span class='notice'>Маскировочный протокол АПЦ загружен.</span>"
@@ -162,7 +162,7 @@
 
 /datum/action/innate/ai/malf_apc_stealth
 	name = "APC Camouflage"
-	desc = "Скрыть синий экран взломанных АПЦ на 5 минут. Обычный спрайт + скрытие в examine."
+	desc = "Скрыть синий экран взломанных АПЦ на 5 минут + автомаскировка будущих взломов. Обычный спрайт + скрытие в examine."
 	button_icon_state = "emergency_lights"
 	uses = 3
 	auto_use_uses = FALSE
@@ -176,16 +176,16 @@
 	var/mob/living/silicon/ai/A = owner
 	if(!istype(A))
 		return
+	var/base = A.parent || A
+	// Окно на 5 минут: будущие взломы тоже автоматически маскируются (см. malfhacked)
+	base.apc_camouflage_until = world.time + MALF_APC_STEALTH_DURATION
 	var/count = 0
 	for(var/obj/machinery/power/apc/P in GLOB.apcs_list)
-		if(P.malfai == A || P.malfhack)
+		if(P.malfai == A || P.malfai == base || P.malfhack)
 			P.activate_stealth(MALF_APC_STEALTH_DURATION)
 			count++
-	if(!count)
-		to_chat(A, span_warning("Нет взломанных вами АПЦ."))
-		return
-	to_chat(A, span_notice("Замаскировано АПЦ: [count] на [MALF_APC_STEALTH_DURATION / 10] сек."))
-	log_game("[key_name(A)] MALF APC stealth on [count] APCs.")
+	to_chat(A, span_notice("Камуфляж включён на [MALF_APC_STEALTH_DURATION / 10] сек. Уже замаскировано АПЦ: [count]. Новые взломы в этом окне тоже будут скрыты."))
+	log_game("[key_name(A)] MALF APC stealth on [count] APCs + window [MALF_APC_STEALTH_DURATION / 10]s.")
 	adjust_uses(-1)
 	if(src && uses)
 		desc = "[initial(desc)] It has [uses] use\s remaining."

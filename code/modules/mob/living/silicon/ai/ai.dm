@@ -61,6 +61,7 @@
 
 	var/obj/machinery/power/apc/malfhack
 	var/explosive = FALSE		//does the AI explode when it dies?
+	var/apc_camouflage_until = 0
 
 	var/mob/living/silicon/ai/parent
 	var/camera_light_on = FALSE
@@ -1164,6 +1165,9 @@
 
 		playsound(get_turf(src), 'sound/machines/ding.ogg', 50, TRUE, ignore_walls = FALSE)
 		to_chat(src, "Hack complete. \The [apc] is now under your exclusive control.")
+		var/mob/living/silicon/ai/base = parent || src
+		if(base.apc_camouflage_until > world.time)
+			apc.activate_stealth(300 SECONDS)
 		apc.update_appearance() // BLUEMOON FIX: update_icon() не пересчитывает update_state, синий экран не появлялся
 
 /mob/living/silicon/ai/verb/deploy_to_shell(var/mob/living/silicon/robot/target)
