@@ -176,7 +176,7 @@
 	var/mob/living/silicon/ai/A = owner
 	if(!istype(A))
 		return
-	var/base = A.parent || A
+	var/mob/living/silicon/ai/base = A.parent || A
 	// Окно на 5 минут: будущие взломы тоже автоматически маскируются (см. malfhacked)
 	base.apc_camouflage_until = world.time + MALF_APC_STEALTH_DURATION
 	var/count = 0

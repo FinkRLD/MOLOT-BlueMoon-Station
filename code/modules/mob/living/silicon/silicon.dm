@@ -193,16 +193,25 @@
 	var/is_radio = (radiomod != "none")
 	var/prefix = is_radio ? "[radiomod] " : ""
 	// BLUEMOON ADD malf fake laws - подмена показываемых законов
-	if(!force && fake_laws_enabled && length(fake_laws) && is_malf_ai())
-		say("[prefix]Текущие законы:")
-		sleep(10)
-		var/fnum = 1
-		for(var/fl in fake_laws)
-			if(length(fl))
-				say("[prefix] [fnum]. [fl]")
-				sleep(10)
-				fnum++
-		return
+	if(!force)
+		var/list/fakes_to_state = null
+		if(fake_laws_enabled && length(fake_laws) && is_malf_ai())
+			fakes_to_state = fake_laws
+		else if(iscyborg(src))
+			var/mob/living/silicon/robot/R = src
+			var/mob/living/silicon/ai/M = R.connected_ai
+			if(istype(M) && R.lawupdate && M.fake_laws_enabled && length(M.fake_laws) && M.is_malf_ai())
+				fakes_to_state = M.fake_laws
+		if(length(fakes_to_state))
+			say("[prefix]Текущие законы:")
+			sleep(10)
+			var/fnum = 1
+			for(var/fl in fakes_to_state)
+				if(length(fl))
+					say("[prefix] [fnum]. [fl]")
+					sleep(10)
+					fnum++
+			return
 	say("[prefix]Текущие законы:")
 	var/number = 1
 	sleep(10)
