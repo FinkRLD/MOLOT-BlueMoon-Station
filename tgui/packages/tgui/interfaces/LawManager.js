@@ -31,7 +31,7 @@ export const LawManager = (props) => {
             <div className="LawCard fake-controls">
               <div className="CardHeader">
                 <span className="DirectiveLabel">FAKE TAB // Подмена для экипажа</span>
-                <div className={fake_enabled ? 'FakeTag FakeOn' : 'FakeTag FakeOff'}>{fake_enabled ? 'FAKE ON' : 'FAKE OFF'}</div>
+                <div className="FakeTag">{fake_enabled ? 'FAKE ON' : 'FAKE OFF'}</div>
               </div>
               <div className="LawBody">
                 <button type="button" className="BroadcastBtn" onClick={() => act('toggle_fake')}>
@@ -170,18 +170,10 @@ export const LawManager = (props) => {
         .scrollable::-webkit-scrollbar-thumb { background: #00ffcc22; }
 
         .FakeTag {
-          font-size: 26px; font-weight: 900; letter-spacing: 2px;
-          padding: 6px 16px; border: 2px solid;
-        }
-        .FakeTag.FakeOn {
-          color: #00ff00; border-color: #00ff00; background: rgba(0, 255, 0, 0.08);
-          text-shadow: 0 0 12px rgba(0, 255, 0, 0.8);
-          box-shadow: 0 0 15px rgba(0, 255, 0, 0.25);
-        }
-        .FakeTag.FakeOff {
-          color: #ff2222; border-color: #ff2222; background: rgba(255, 0, 0, 0.08);
-          text-shadow: 0 0 12px rgba(255, 0, 0, 0.8);
-          box-shadow: 0 0 15px rgba(255, 0, 0, 0.25);
+          font-size: 14px; font-weight: bold; letter-spacing: 1px;
+          color: #00ffcc; background: rgba(0,0,0,0.5);
+          padding: 2px 8px; border: 1px solid rgba(0, 255, 204, 0.2);
+          text-shadow: 0 0 8px rgba(0, 255, 204, 0.5);
         }
       `}
       </style>
