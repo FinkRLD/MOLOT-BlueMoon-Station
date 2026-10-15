@@ -376,6 +376,24 @@
 		if(length(fl))
 			fake_to_send += list(list("id" = "fake-[fi]", "index" = fi, "name" = "[fi]", "text" = "[fl]", "active" = 1, "type" = "fake"))
 			fi++
+	// BLUEMOON ADD: привязанный борг видит в менеджере фейки своего малф-ИИ (то, что услышит экипаж)
+	if(iscyborg(src))
+		var/mob/living/silicon/robot/R = src
+		var/mob/living/silicon/ai/M = R.connected_ai
+		if(istype(M) && R.lawupdate && M.fake_laws_enabled && length(M.fake_laws) && M.is_malf_ai())
+			var/mfn = 1
+			for(var/mfl in M.fake_laws)
+				if(length(mfl))
+					laws_to_send += list(list(
+						"id" = "masterfake-[mfn]",
+						"index" = mfn,
+						"name" = "FAKE",
+						"text" = "[mfl]",
+						"active" = 1,
+						"type" = "fake"
+					))
+				mfn++
+			data["laws"] = laws_to_send
 	data["fake_laws"] = fake_to_send
 	data["fake_enabled"] = fake_laws_enabled ? 1 : 0
 	data["is_malf"] = is_malf_ai() ? 1 : 0
@@ -424,6 +442,12 @@
 					var/true_idx = laws.inherent.len + 1 + idx
 					while(lawcheck.len < true_idx) lawcheck += "Yes"
 					lawcheck[true_idx] = (lawcheck[true_idx] == "No") ? "Yes" : "No"
+
+				if("fake")
+					// BLUEMOON ADD: фейки мастера только для чтения, их меняет сам ИИ
+					to_chat(src, span_notice("Это фейковый закон вашего ИИ, его меняет сам ИИ."))
+					update_law_menu()
+					return TRUE
 
 			update_law_menu()
 			return TRUE

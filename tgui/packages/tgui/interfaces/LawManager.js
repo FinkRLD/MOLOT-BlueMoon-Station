@@ -137,6 +137,11 @@ export const LawManager = (props) => {
         .LawCard.zeroth .DirectiveLabel { color: #ff3366 !important; text-shadow: 0 0 10px #ff3366; }
         .LawCard.zeroth .CheckIcon { color: #ff3366; }
 
+        /* Фейковые законы мастера */
+        .LawCard.fake { border-left-color: #00ffcc; background: rgba(0, 255, 204, 0.05); }
+        .LawCard.fake .DirectiveLabel { color: #00ffcc !important; text-shadow: 0 0 10px rgba(0, 255, 204, 0.5); }
+        .LawCard.fake .CheckIcon { color: #00ffcc; }
+
         .ToggleAction {
           background: none; border: none; color: inherit;
           display: flex; align-items: center; cursor: pointer; padding: 0;
