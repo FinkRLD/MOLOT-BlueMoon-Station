@@ -64,7 +64,8 @@
 /datum/action/innate/ai/malf_fake_laws
 	name = "Fake Laws"
 	desc = "Писать/переключать фейковые законы. Экипаж увидит их вместо настоящих."
-	button_icon_state = "reactivate_cameras"
+	icon_icon = 'icons/mob/actions.dmi'
+	button_icon_state = "language_menu"
 	auto_use_uses = FALSE
 
 /datum/action/innate/ai/malf_fake_laws/New()
@@ -163,7 +164,8 @@
 /datum/action/innate/ai/malf_apc_stealth
 	name = "APC Camouflage"
 	desc = "Скрыть синий экран взломанных АПЦ на 5 минут + автомаскировка будущих взломов. Обычный спрайт + скрытие в examine."
-	button_icon_state = "emergency_lights"
+	icon_icon = 'icons/mob/actions/actions.dmi'
+	button_icon_state = "null_charge"
 	uses = 3
 	auto_use_uses = FALSE
 	cooldown_period = 100
