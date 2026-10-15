@@ -1,8 +1,11 @@
 // BLUEMOON ADD - Malf AI custom abilities: fake laws, fake ion storm, APC stealth
 // Порт механики Paradise LawManager + стелс для сбойного ИИ.
-// Подхватывается автоматически через typesof(/datum/AI_Module) в datum/module_picker.
 
-#define MALF_APC_STEALTH_DURATION (300 SECONDS) // 5 минут стелса
+
+#define MALF_APC_STEALTH_MAX 3000
+#define MALF_APC_STEALTH_DRAIN 1
+#define MALF_APC_STEALTH_REGEN 2
+#define MALF_APC_STEALTH_BUFFER (30 SECONDS)
 #define MALF_FAKE_LAWS_MAX 20
 
 // ---------- Silicon vars ----------
@@ -37,16 +40,22 @@
 /obj/machinery/power/apc/proc/is_stealthed()
 	return stealth_end_time > world.time
 
-/obj/machinery/power/apc/proc/activate_stealth(duration = MALF_APC_STEALTH_DURATION)
+/obj/machinery/power/apc/proc/activate_stealth(duration = MALF_APC_STEALTH_BUFFER, silent = FALSE)
 	stealth_end_time = world.time + duration
 	update_appearance()
-	if(malfai)
+	if(!silent && malfai)
 		to_chat(malfai, span_notice("[src] маскируется под исправный ([duration / 10] сек). Синий экран скрыт."))
 	addtimer(CALLBACK(src, PROC_REF(stealth_expire)), duration + 5, TIMER_UNIQUE|TIMER_OVERRIDE|TIMER_DELETE_ME)
 
+/obj/machinery/power/apc/proc/clear_stealth(silent = FALSE)
+	stealth_end_time = 0
+	update_appearance()
+	if(!silent && malfai)
+		to_chat(malfai, span_warning("Маскировка [src] снята. АПЦ снова синий."))
+
 /obj/machinery/power/apc/proc/stealth_expire()
 	if(!is_stealthed())
-		update_appearance() // важно: пересчитывает update_state, возвращает синий экран
+		update_appearance()
 		if(malfai)
 			to_chat(malfai, span_warning("Маскировка [src] истекла. АПЦ снова синий."))
 
@@ -151,48 +160,109 @@
 		desc = "[initial(desc)] It has [uses] use\s remaining."
 		UpdateButtons()
 
-// ================= APC STEALTH =================
+// ================= APC STEALTH  =================
 /datum/AI_Module/small/malf_apc_stealth
 	module_name = "Маскировка АПЦ"
 	mod_pick_name = "apcstealth"
-	description = "На время меняет спрайт взломанных АПЦ с синего (apcemag) на обычный зелёный. Для стелса. Действует на уже взломанные и на все взломы в ближайшие 5 минут (300 сек)."
+	description = "Переключаемая маскировка взломанных АПЦ: синий экран (apcemag) меняется на обычный зелёный. Действует на уже взломанные и на будущие взломы, пока включён. Батарея 3000 ед.: -1/сек включён, +2/сек выключен."
 	cost = 15
 	power_type = /datum/action/innate/ai/malf_apc_stealth
-	unlock_text = "<span class='notice'>Маскировочный протокол АПЦ загружен.</span>"
+	unlock_text = "<span class='notice'>Маскировочный протокол АПЦ загружен. Нажимайте на иконку чтобы включать/выключать.</span>"
 	unlock_sound = 'sound/machines/ping.ogg'
 
 /datum/action/innate/ai/malf_apc_stealth
 	name = "APC Camouflage"
-	desc = "Скрыть синий экран взломанных АПЦ на 5 минут + автомаскировка будущих взломов. Обычный спрайт + скрытие в examine."
+	desc = "Переключить маскировку взломанных АПЦ. Обычный спрайт + скрытие в examine."
 	icon_icon = 'icons/mob/actions/actions.dmi'
 	button_icon_state = "null_charge"
-	uses = 3
 	auto_use_uses = FALSE
-	cooldown_period = 100
 
 /datum/action/innate/ai/malf_apc_stealth/New()
 	..()
-	desc = "[desc] It has [uses] use\s remaining."
+	desc = initial(desc)
+	refresh_desc()
+
+/datum/action/innate/ai/malf_apc_stealth/Grant(mob/living/L)
+	. = ..()
+	start_tick()
 
 /datum/action/innate/ai/malf_apc_stealth/Activate()
 	var/mob/living/silicon/ai/A = owner
 	if(!istype(A))
 		return
 	var/mob/living/silicon/ai/base = A.parent || A
-	// Окно на 5 минут: будущие взломы тоже автоматически маскируются (см. malfhacked)
-	base.apc_camouflage_until = world.time + MALF_APC_STEALTH_DURATION
-	var/count = 0
-	for(var/obj/machinery/power/apc/P in GLOB.apcs_list)
-		if(P.malfai == A || P.malfai == base || P.malfhack)
-			P.activate_stealth(MALF_APC_STEALTH_DURATION)
-			count++
-	to_chat(A, span_notice("Камуфляж включён на [MALF_APC_STEALTH_DURATION / 10] сек. Уже замаскировано АПЦ: [count]. Новые взломы в этом окне тоже будут скрыты."))
-	log_game("[key_name(A)] MALF APC stealth on [count] APCs + window [MALF_APC_STEALTH_DURATION / 10]s.")
-	adjust_uses(-1)
-	if(src && uses)
-		desc = "[initial(desc)] It has [uses] use\s remaining."
-		UpdateButtons()
+	if(base.apc_stealth_on)
+		set_stealth(FALSE)
+		to_chat(A, span_notice("Камуфляж выключен. Взломанные АПЦ снова синие, энергия восстанавливается."))
+		log_game("[key_name(A)] MALF APC stealth OFF.")
+	else
+		if(base.apc_stealth_energy <= 0)
+			to_chat(A, span_warning("Нет энергии для камуфляжа. Подождите восстановления."))
+			return
+		set_stealth(TRUE)
+		to_chat(A, span_notice("Камуфляж включён. Взломанные АПЦ выглядят исправными, новые взломы тоже будут скрыты."))
+		log_game("[key_name(A)] MALF APC stealth ON.")
+	start_tick()
 
-#undef MALF_APC_STEALTH_DURATION
+
+/datum/action/innate/ai/malf_apc_stealth/proc/set_stealth(state)
+	var/mob/living/silicon/ai/A = owner
+	if(!istype(A))
+		return
+	var/mob/living/silicon/ai/base = A.parent || A
+	base.apc_stealth_on = state
+	if(state)
+		for(var/obj/machinery/power/apc/P in GLOB.apcs_list)
+			if(P.malfai == A || P.malfai == base)
+				P.activate_stealth(MALF_APC_STEALTH_BUFFER, silent = TRUE)
+	else
+		for(var/obj/machinery/power/apc/P in GLOB.apcs_list)
+			if(P.malfai == A || P.malfai == base)
+				P.clear_stealth(silent = TRUE)
+	refresh_desc()
+
+
+/datum/action/innate/ai/malf_apc_stealth/proc/start_tick()
+	if(QDELETED(src))
+		return
+	addtimer(CALLBACK(src, PROC_REF(stealth_tick)), 10, TIMER_UNIQUE|TIMER_OVERRIDE|TIMER_DELETE_ME)
+
+/datum/action/innate/ai/malf_apc_stealth/proc/stealth_tick()
+	if(QDELETED(src) || QDELETED(owner))
+		return
+	var/mob/living/silicon/ai/A = owner
+	if(istype(A))
+		var/mob/living/silicon/ai/base = A.parent || A
+		if(base.apc_stealth_on)
+			if(base.apc_stealth_energy > 0)
+				base.apc_stealth_energy = max(0, base.apc_stealth_energy - MALF_APC_STEALTH_DRAIN)
+				for(var/obj/machinery/power/apc/P in GLOB.apcs_list)
+					if((P.malfai == A || P.malfai == base) && P.stealth_end_time < world.time + 20 SECONDS)
+						P.activate_stealth(MALF_APC_STEALTH_BUFFER, silent = TRUE)
+				if(base.apc_stealth_energy <= 0)
+					set_stealth(FALSE)
+					to_chat(A, span_warning("Энергия камуфляжа исчерпана! Стелс выключен, АПЦ снова синие."))
+			else
+				set_stealth(FALSE)
+		else if(base.apc_stealth_energy < MALF_APC_STEALTH_MAX)
+			base.apc_stealth_energy = min(MALF_APC_STEALTH_MAX, base.apc_stealth_energy + MALF_APC_STEALTH_REGEN)
+		refresh_desc()
+	start_tick()
+
+/datum/action/innate/ai/malf_apc_stealth/proc/refresh_desc()
+	var/mob/living/silicon/ai/A = owner
+	var/state = "ВЫКЛ"
+	var/energy = MALF_APC_STEALTH_MAX
+	if(istype(A))
+		var/mob/living/silicon/ai/base = A.parent || A
+		state = base.apc_stealth_on ? "ВКЛ" : "ВЫКЛ"
+		energy = base.apc_stealth_energy
+	desc = "Стелс АПЦ: [state]. Энергия: [energy]/[MALF_APC_STEALTH_MAX] (-1/сек вкл, +2/сек выкл)."
+	UpdateButtons()
+
+#undef MALF_APC_STEALTH_MAX
+#undef MALF_APC_STEALTH_DRAIN
+#undef MALF_APC_STEALTH_REGEN
+#undef MALF_APC_STEALTH_BUFFER
 #undef MALF_FAKE_LAWS_MAX
 
