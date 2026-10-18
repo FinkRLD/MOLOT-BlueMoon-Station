@@ -18,6 +18,7 @@ const mockChatRenderer = {
   setCustomColors: jest.fn(),
   setCustomProperties: jest.fn(),
   setStyleOverrides: jest.fn(),
+  setRadioJobsVisible: jest.fn(),
   setTimestamps: jest.fn(),
   setTimeDividers: jest.fn(),
   changePage: jest.fn(),
